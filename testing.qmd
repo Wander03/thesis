@@ -1,0 +1,146 @@
+---
+title: "testing"
+author: "Andrew Kerr"
+format: html
+editor: visual
+---
+
+# Packages
+```{r}
+#| label: set-up
+#| message: false
+
+library(tidyverse)
+
+# Spectral Clustering
+library(kernlab) 
+library(igraph)
+```
+
+# Spectral Clustering
+```{r}
+#| label: kernlab-specc
+
+data(spirals)
+
+sc <- specc(as.matrix(iris[,c(1,2)]), centers=3)
+
+# sc
+# centers(sc)
+# size(sc)
+# withinss(sc)
+
+plot(iris[,c(1,2)], col=sc)
+
+
+sc <- specc(spirals, centers=2)
+plot(spirals, col=sc)
+```
+```{r}
+# exp(-dist(iris[, 1:4])^2 / (2 * 1^2)) computes a similarity value for each 
+# pair of data points. The formula used here is a Gaussian kernel, which maps distances into similarity scores.
+similarity_matrix <- exp(-dist(iris[, 1:4])^2 / (2 * 1^2))
+ 
+#Compute Eigenvalues and Eigenvectors
+eigen_result <- eigen(similarity_matrix)
+eigenvalues <- eigen_result$values
+eigenvectors <- eigen_result$vectors
+ 
+#Choose the First k Eigenvectors
+k <- 3 
+selected_eigenvectors <- eigenvectors[, 1:k]
+ 
+#Apply K-Means Clustering
+cluster_assignments <- kmeans(selected_eigenvectors, centers = k)$cluster
+ 
+# Add species information to the clustering results
+iris$Cluster <- factor(cluster_assignments)
+iris$Species <- as.character(iris$Species)
+
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Cluster, label = Species)) +
+  geom_point() +
+  # geom_text(check_overlap = TRUE, vjust = 1.5) +
+  labs(title = "Spectral Clustering of Iris Dataset",
+       x = "Sepal Length", y = "Sepal Width")
+```
+
+
+```{r}
+#| label: igraph
+
+data(spirals)
+
+adj_matrix <- as.matrix(dist(spirals))
+g <- graph_from_adjacency_matrix(adj_matrix)
+lap <- laplacian_matrix(g)
+e <- eigen(lap)
+plot(spirals, col = kmeans(e$values, 2)$cluster, pch = 19, 
+     main = "Spectral Clustering with k-means")
+
+################################################################################
+k <- 2
+
+# We use the Euclidean distance to calculate the pairwise distances between data points, 
+# square these distances, and then apply the exponential function to get a similarity 
+# measure. This is a common way to compute the similarity matrix in spectral clustering.
+similarity_matrix <- exp(-dist(spirals)^2)
+ 
+# Perform spectral decomposition
+eigen_result <- eigen(similarity_matrix)
+ 
+# Extract the top-k eigenvectors
+k_eigenvectors <- eigen_result$vectors[, 1:k]
+ 
+# Perform k-means clustering on the eigenvectors
+cluster_assignments <- kmeans(k_eigenvectors, centers = k)$cluster
+ 
+# Visualize the clusters
+plot(spirals, col = cluster_assignments, pch = 19, 
+     main = "Spectral Clustering with k-means")
+
+################################################################################
+```
+
+```{r}
+library(kohonen)
+data <- matrix(rnorm(100), nrow = 10, ncol = 10)
+som_grid <- somgrid(xdim = 5, ydim = 5, topo = "hexagonal")
+som_model <- som(data, grid = som_grid, rlen = 100, alpha = c(0.05, 0.01))
+plot(som_model)
+
+plot(som(as.matrix(iris[,c(1,2)])))
+plot(som(spirals))
+```
+
+# Association Rules
+```{r}
+library(arules)
+library(arulesViz)
+data(Groceries)
+rules <- apriori(Groceries, parameter = list(support = 0.01, confidence = 0.3, minlen = 1))
+inspect(rules)
+plot(rules, method = "scatterplot", measure = c("support", "confidence"))
+
+subset.rules <- which(colSums(is.subset(rules, rules)) > 1) # get subset rules in vector
+length(subset.rules)
+subset.association.rules <- rules[-subset.rules] # remove subset rules.
+subset.association.rules
+
+
+rules <- apriori(Groceries, parameter = list(supp=0.01, conf=0.3),appearance = list(lhs = c("yogurt")))
+inspect(rules)
+
+
+library(RColorBrewer)
+itemFrequencyPlot(Groceries,topN=20,type="absolute",col=brewer.pal(8,'Pastel2'), main="Absolute Item Frequency Plot")
+itemFrequencyPlot(Groceries,topN=20,type="relative",col=brewer.pal(8,'Pastel2'),main="Relative Item Frequency Plot")
+```
+
+```{r}
+itemsets <- eclat(Groceries, parameter = list(supp = 0.01))
+rules <- ruleInduction(itemsets, confidence = .5)
+inspect(rules)
+plot(rules, method = "scatterplot", measure = c("support", "confidence"))
+```
+
+
