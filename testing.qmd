@@ -7,6 +7,7 @@ embed-resources: true
 ---
 
 # Packages
+
 ```{r}
 #| label: set-up
 #| message: false
@@ -19,6 +20,7 @@ library(igraph)
 ```
 
 # Spectral Clustering
+
 ```{r}
 #| label: kernlab-specc
 
@@ -37,6 +39,7 @@ plot(iris[,c(1,2)], col=sc)
 sc <- specc(spirals, centers=2)
 plot(spirals, col=sc)
 ```
+
 ```{r}
 # exp(-dist(iris[, 1:4])^2 / (2 * 1^2)) computes a similarity value for each 
 # pair of data points. The formula used here is a Gaussian kernel, which maps distances into similarity scores.
@@ -64,7 +67,6 @@ ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Cluster, label = Species)) +
   labs(title = "Spectral Clustering of Iris Dataset",
        x = "Sepal Length", y = "Sepal Width")
 ```
-
 
 ```{r}
 #| label: igraph
@@ -114,6 +116,7 @@ plot(som(spirals))
 ```
 
 # Association Rules
+
 ```{r}
 library(arules)
 library(arulesViz)
@@ -145,5 +148,3 @@ rules <- ruleInduction(itemsets, confidence = .5)
 inspect(rules)
 plot(rules, method = "scatterplot", measure = c("support", "confidence"))
 ```
-
-
