@@ -3,6 +3,7 @@ title: "testing"
 author: "Andrew Kerr"
 format: html
 editor: visual
+embed-resources: true
 ---
 
 # Packages

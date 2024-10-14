@@ -1,0 +1,55 @@
+---
+title: "Tidyclust testing"
+author: "Andrew Kerr"
+format: html
+editor: visual
+embed-resources: true
+---
+
+# Packages
+```{r}
+#| label: set-up
+#| message: false
+
+library(tidyverse)
+library(tidymodels)
+# library(workflows)
+# library(parsnip)
+
+library(tidyclust)
+```
+
+# K-means Example
+
+## Engine
+```{r}
+set.seed(1234)
+
+kmeans_spec <- k_means(num_clusters = 3) %>%
+  set_engine("stats")
+
+kmeans_spec
+```
+
+## Fit
+```{r}
+kmeans_spec_fit <- kmeans_spec %>%
+  fit(~., data = mtcars)
+kmeans_spec_fit
+```
+
+## Predict
+```{r}
+predict(kmeans_spec_fit, mtcars[1:4, ])
+```
+
+## Get Clusters
+```{r}
+extract_cluster_assignment(kmeans_spec_fit)
+```
+
+## Get Centroids
+```{r}
+extract_centroids(kmeans_spec_fit)
+```
+
