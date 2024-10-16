@@ -17,6 +17,11 @@ library(tidyverse)
 # Spectral Clustering
 library(kernlab) 
 library(igraph)
+
+
+
+library(arules)
+library(arulesViz)
 ```
 
 # Spectral Clustering
@@ -118,8 +123,6 @@ plot(som(spirals))
 # Association Rules
 
 ```{r}
-library(arules)
-library(arulesViz)
 data(Groceries)
 rules <- apriori(Groceries, parameter = list(support = 0.01, confidence = 0.3, minlen = 1))
 inspect(rules)
@@ -147,4 +150,29 @@ itemsets <- eclat(Groceries, parameter = list(supp = 0.01))
 rules <- ruleInduction(itemsets, confidence = .5)
 inspect(rules)
 plot(rules, method = "scatterplot", measure = c("support", "confidence"))
+```
+
+```{r}
+# check if outputs are the same
+
+# assoc rules
+rules <- apriori(Groceries, parameter = list(support = 0.01, confidence = 0.5, minlen = 1))
+apriori_rules <- inspect(rules)
+
+
+itemsets <- eclat(Groceries, parameter = list(supp = 0.01))
+rules <- ruleInduction(itemsets, confidence = .5)
+eclat_rules <- inspect(rules)
+
+
+left_join(apriori_rules, eclat_rules, by = c('lhs', 'rhs'))
+
+
+# itemsets
+apriori_itemsets <- apriori(Groceries, parameter = list(support = 0.01, confidence = 0.5, minlen = 1, target = 'frequent itemsets'))
+apriori_itemsets <- inspect(apriori_itemsets)
+
+left_join(apriori_itemsets, inspect(itemsets), by = c('items, support'))
+
+
 ```
