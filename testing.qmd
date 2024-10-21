@@ -152,27 +152,64 @@ inspect(rules)
 plot(rules, method = "scatterplot", measure = c("support", "confidence"))
 ```
 
+## Output comparisan
+
 ```{r}
-# check if outputs are the same
+data(Groceries)
 
-# assoc rules
-rules <- apriori(Groceries, parameter = list(support = 0.01, confidence = 0.5, minlen = 1))
-apriori_rules <- inspect(rules)
+# Generate frequent itemsets using the Apriori algorithm
+frequent_items_apriori <- apriori(
+  Groceries, 
+  parameter = list(supp = 0.01, target = "frequent itemsets")
+  )
 
+# Generate frequent itemsets using the Eclat algorithm
+frequent_items_eclat <- eclat(
+  Groceries, 
+  parameter = list(supp = 0.01, maxlen = 5)
+  )
 
-itemsets <- eclat(Groceries, parameter = list(supp = 0.01))
-rules <- ruleInduction(itemsets, confidence = .5)
-eclat_rules <- inspect(rules)
+# Convert itemsets to data frames for easier comparison
+frequent_apriori_df <- as(frequent_items_apriori, "data.frame") %>%
+  mutate(support = round(support, 5)) %>%
+  arrange(items)
 
+frequent_eclat_df <- as(frequent_eclat_df, "data.frame") %>%
+  mutate(support = round(support, 5)) %>%
+  arrange(items)
+```
 
-left_join(apriori_rules, eclat_rules, by = c('lhs', 'rhs'))
+```{r}
+# Compare the data frames
+identical(frequent_apriori_df, frequent_eclat_df)
+```
 
+```{r}
+# Generate association rules using Apriori
+rules_apriori <- apriori(
+  Groceries, 
+  parameter = list(supp = 0.01, conf = 0.5, target = "rules")
+  )
 
-# itemsets
-apriori_itemsets <- apriori(Groceries, parameter = list(support = 0.01, confidence = 0.5, minlen = 1, target = 'frequent itemsets'))
-apriori_itemsets <- inspect(apriori_itemsets)
+# Generate rules from Eclat itemsets
+rules_eclat <- ruleInduction(
+  frequent_items_eclat, 
+  Groceries, 
+  confidence = 0.5,
+  method = 'ptree')
 
-left_join(apriori_itemsets, inspect(itemsets), by = c('items, support'))
+rules_apriori_df <- as(rules_apriori, "data.frame") %>%
+  select(-count, -coverage) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 5))) %>%
+  arrange(rules)
+  
+rules_eclat_df <- as(rules_eclat, "data.frame") %>%
+  select(-itemset) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 5))) %>%
+  arrange(rules)
+```
 
-
+```{r}
+# Compare the data frames
+identical(rules_apriori_df, rules_eclat_df)
 ```
