@@ -174,7 +174,7 @@ frequent_apriori_df <- as(frequent_items_apriori, "data.frame") %>%
   mutate(support = round(support, 5)) %>%
   arrange(items)
 
-frequent_eclat_df <- as(frequent_eclat_df, "data.frame") %>%
+frequent_eclat_df <- as(frequent_items_eclat, "data.frame") %>%
   mutate(support = round(support, 5)) %>%
   arrange(items)
 ```
