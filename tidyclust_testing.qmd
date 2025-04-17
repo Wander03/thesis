@@ -7,6 +7,7 @@ embed-resources: true
 ---
 
 # Packages
+
 ```{r}
 #| label: set-up
 #| message: false
@@ -22,6 +23,7 @@ library(tidyclust)
 # K-means Example
 
 ## Engine
+
 ```{r}
 set.seed(1234)
 
@@ -32,6 +34,7 @@ kmeans_spec
 ```
 
 ## Fit
+
 ```{r}
 kmeans_spec_fit <- kmeans_spec %>%
   fit(~., data = mtcars)
@@ -39,17 +42,19 @@ kmeans_spec_fit
 ```
 
 ## Predict
+
 ```{r}
 predict(kmeans_spec_fit, mtcars[1:4, ])
 ```
 
 ## Get Clusters
+
 ```{r}
 extract_cluster_assignment(kmeans_spec_fit)
 ```
 
 ## Get Centroids
+
 ```{r}
 extract_centroids(kmeans_spec_fit)
 ```
-
