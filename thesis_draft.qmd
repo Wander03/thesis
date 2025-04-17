@@ -1,6 +1,6 @@
 ---
 title: "Thesis"
-format: html
+format: pdf
 editor: visual
 eval: false
 bibliography: freq_itemsets_citations.bib
