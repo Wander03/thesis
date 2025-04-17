@@ -1,7 +1,7 @@
 ---
 title: "Thesis"
 format: pdf
-editor: visual
+editor: source
 eval: false
 bibliography: freq_itemsets_citations.bib
 ---
