@@ -98,11 +98,22 @@ kmeans_spec <- k_means(num_clusters = 3) %>%
   set_engine("stats")
 ```
 
-where the backend model is using the stats package.
+The name of the function, `k_means`, is the name of the model. The parameter(s), here `num_clusters`, are the required and optional inputs for your model. In this example `num_clusters = 3` represents a K-means model with three clusters. The `set_engine()` function determines what library implementation of the model is being run, and in this example that is the `stats` library. 
 
-The next step is data preparation, and is taken care of by `recipes` [@kuhn_recipes_2024]. `recipes` support a range of data transformation, including normalization, standardization, and dummy variable creation as well as data cleaning steps such as missing value removal and imputation. The specification of a recipe follows a declarative syntax, improving both readability and reproducibility in the data cleaning and preparation process.
+The next step is data preparation, and is taken care of by `recipes` [@kuhn_recipes_2024]. The `recipes` library support a range of data transformations including normalization, standardization, and dummy variable creation as well as data cleaning steps such as missing value removal and imputation. The specification of a recipe follows a declarative syntax, improving both readability and reproducibility in the data cleaning and preparation process.
 
-The final steps encompass model fitting and prediction. The fit() method accepts either raw data or a recipe object, and returns a `cluster_fit` object. This fitted object holds the trained model along with any metadata necessary for later operations. The predict() function takes the fitted object and new observations as inputs, outputting results in a standardized format. The functionality of predict() depends on the type of fitted model, for example the K-means model from before would predict which of the three clusters each new observation in the input data belongs to.
+```{r}
+recipe <- recipe(~ bill_length_mm + bill_depth_mm + sex, data = penguins) %>%
+  step_naomit(all_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors())
+```
+
+The recipe example above is creating a formula using the `PalmerPenguins` dataset, where `bill_length_mm`, `bill_depth_mm`, and `sex` are the predictor variables. It removes missing values, normalizes the numeric predictors, and converts the categorical predictor into dummy variables. This recipe can be used for different models
+
+The final steps encompass model fitting and prediction. The fit() method accepts either raw data or a recipe object, and returns a `cluster_fit` object. This fitted object holds the trained model along with any metadata necessary for later operations. 
+
+The predict() function takes the fitted object and new observations as inputs, outputting results in a standardized format. The functionality of predict() depends on the type of fitted model, for example the K-means model from before would predict which of the three clusters each new observation in the input data belongs to.
 
 The remaining sections of this thesis will be dedicated to the examination of the design and implementation choices made while implementing FIM in `tidyclust.` Section 3 covers each step of the workflow detailed above, Section 4 addresses current limitations, and Section 5 concludes with proposed enhancements.
 
