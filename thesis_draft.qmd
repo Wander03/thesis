@@ -10,13 +10,13 @@ bibliography: freq_itemsets_citations.bib
 
 # Introduction
 
-Since the early 1990s, frequent itemset mining (FIM) has been an important area of research in data mining. The work of Agrawal, Imieliński, and Swami [-@agrawal_mining_1993] introduced the Apriori algorithm, which established the foundation for identifying co-occurring items in transactional datasets. Shortly after, algorithms such as FP-growth’s FP-tree structure [@han_mining_2000] and Elcat’s vertical tid-list approach [@zaki_scalable_2000] significantly improved the performance and scalability of FIM techniques. These techniques have since been applied to a wide range of applications, including market basket analysis, web personalization [@mobasher_effective_2001], and associative classification [@liu_integrating_1998]. 
+Since the early 1990s, frequent itemset mining (FIM) has been an important area of research in data mining. The work of Agrawal, Imieliński, and Swami [-@agrawal_mining_1993] introduced the Apriori algorithm, which established the foundation for identifying co-occurring items in transactional datasets. Shortly after, algorithms such as FP-growth’s FP-tree structure [@han_mining_2000] and Elcat’s vertical tid-list approach [@zaki_scalable_2000] significantly improved the performance and scalability of FIM techniques. These techniques have since been applied to a wide range of applications, including market basket analysis, web personalization [@mobasher_effective_2001], and associative classification [@liu_integrating_1998].
 
 Although FIM has become more efficient, practical implementations remain confined to specialized software packages. The R programming environment offers itemset mining through `arules` [@hahsler_arules_2011], while Python users rely on `mlxtend` [@raschka_mlxtend_2018] for similar functionality. However, these implementations share the same limitation: they operate as stand alone itemset mining applications rather than as integrated components in a modern data science workflow. The absence of native integration with frameworks like `tidymodels` [@kuhn_tidymodels_2020] or `scikit-learn` [@buitinck_api_2013] leaves a gap, forcing analysts to create their own custom solutions.
 
-Another limitation lies in the interpretation of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, meanwhile other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001;@wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
+Another limitation lies in the interpretation of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
 
-This thesis seeks to address these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms to `tidyclust`, this work allows itemset mining to be used within unsupervised workflows. It also creates a standard methodology for predicting missing-items, and lays a foundation for future additions of mining and clustering techniques within `tidyclust`. 
+This thesis seeks to address these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms to `tidyclust`, this work allows itemset mining to be used within unsupervised workflows. It also creates a standard methodology for predicting missing-items, and lays a foundation for future additions of mining and clustering techniques within `tidyclust`.
 
 # Background
 
@@ -28,7 +28,7 @@ Frequent itemset mining (FIM) methods were developed to identify the elements of
 
 Some key terms used in frequent itemset mining have already been mentioned. In this section, we define and formalize these expressions.
 
-Let $I = \{i_1, i_2, \dots, i_m\}$ be a set of items and $D = \{t_1, t_2, \dots, t_n\}$ a transactional dataset where each transaction $t_j \subseteq I$. A non-empty subset $X = \{i_1, i_2, ..., i_k\} \subseteq I$ is an itemset, or k-itemset where $k$ is the number of items. 
+Let $I = \{i_1, i_2, \dots, i_m\}$ be a set of items and $D = \{t_1, t_2, \dots, t_n\}$ a transactional dataset where each transaction $t_j \subseteq I$. A non-empty subset $X = \{i_1, i_2, ..., i_k\} \subseteq I$ is an itemset, or k-itemset where $k$ is the number of items.
 
 The support of an itemset $X$ is the proportion of transactions containing $X$:
 
@@ -40,31 +40,25 @@ An itemset is considered frequent if its support is greater than or equal to a g
 
 The apriori algorithm [@agrawal_mining_1993] implements a breadth-first search to identify frequent itemsets, leveraging the downward closure property. The method operates as follows:
 
-1.  Initialization ($k = 1$): 
-Scan the transactional dataset $D$ to compute the support of all 1-itemsets $X$.
-Keep only those with support($X$) $\geq \sigma$, forming the set of frequent 1-itemsets $L_1$.
+1.  Initialization ($k = 1$): Scan the transactional dataset $D$ to compute the support of all 1-itemsets $X$. Keep only those with support($X$) $\geq \sigma$, forming the set of frequent 1-itemsets $L_1$.
 
-2.  Candidate Generation ($k > 1$): 
-Generate candidate k-itemsets $C_k$ by joining pairs of frequent (k - 1)-itemsets from $L_{k-1}$ that share the first $k - 2$ items:
+2.  Candidate Generation ($k > 1$): Generate candidate k-itemsets $C_k$ by joining pairs of frequent (k - 1)-itemsets from $L_{k-1}$ that share the first $k - 2$ items:
 
 $$C_k = \{X \cup Y \mid X, Y \in L_{k - 1}, |X \cap Y| = k - 2\}$$
 
-3.  Pruning: 
-Eliminate any candidate $X \in C_k$ where (k - 1)-subset of $X$ is not in $L_{k - 1}$ (downward closure property)
+3.  Pruning: Eliminate any candidate $X \in C_k$ where (k - 1)-subset of $X$ is not in $L_{k - 1}$ (downward closure property)
 
-4.  Support Counting: 
-	Scan the full dataset $D$ to compute the support($X$) for all $X \in C_k$.
+4.  Support Counting: Scan the full dataset $D$ to compute the support($X$) for all $X \in C_k$.
 
-5.  Iteration: 
-	Repeat steps 2-4 until no new frequent itemsets are found ($L_k = \emptyset$). 
-	
-	$\bigcup_k L_k$ is the set of frequent itemsets.
+5.  Iteration: Repeat steps 2-4 until no new frequent itemsets are found ($L_k = \emptyset$).
+
+    $\bigcup_k L_k$ is the set of frequent itemsets.
 
 ### The Eclat Algorithm
 
 The Equivalence Class Transformation (Eclat) algorithm [@zaki_scalable_2000] is an alternative to Apriori that uses a depth-first search strategy and vertical data representation. Instead of scanning the dataset repeatedly, Eclat represents transactions as tid-lists (transaction ID lists), which map each item or itemset to the IDs of transactions in which it appears. The method operates as follows:
 
-1. Vertical Representation: Transform the transaction dataset $D$ into a vertical format, where each item $x$ maintains its tid-list:
+1.  Vertical Representation: Transform the transaction dataset $D$ into a vertical format, where each item $x$ maintains its tid-list:
 
 $$T(x) = {t \in D \mid x \in t}$$
 
@@ -72,24 +66,25 @@ Initialize the set of frequent 1-items:
 
 $$L_1 = \{\{x\} \mid |T(x)| \geq \sigma \times |D|\}$$
 
-2. Depth-First Search: For each frequent itemset $X \in L_k$:
+2.  Depth-First Search: For each frequent itemset $X \in L_k$:
 
-a. Candidate Generation: Extend $X$ with items $y > max(X)$ (lexicographic order) to form (k + 1)-itemset candidates $X' = X \cup \{y\}$. 
+<!-- -->
 
-b. Tid-list Intersection: Compute the tid list of $X’$ with set intersection:
-			$$T(X’) = \bigcap_{x \in X’} T(x)$$
+a.  Candidate Generation: Extend $X$ with items $y > max(X)$ (lexicographic order) to form (k + 1)-itemset candidates $X' = X \cup \{y\}$.
 
-c. Support Verification: Keep $X’$ if:
-$$\frac{|T(X’)|}{|D|} \geq \sigma$$
-Add $X’$ to $L_{k + 1}$
+b.  Tid-list Intersection: Compute the tid list of $X’$ with set intersection: $$T(X’) = \bigcap_{x \in X’} T(x)$$
 
-3. Termination: Repeat step 2 until no new frequent itemsets are found ($L_k = \emptyset$).
+c.  Support Verification: Keep $X’$ if: $$\frac{|T(X’)|}{|D|} \geq \sigma$$ Add $X’$ to $L_{k + 1}$
+
+<!-- -->
+
+3.  Termination: Repeat step 2 until no new frequent itemsets are found ($L_k = \emptyset$).
 
 ## tidyclust
 
 The `tidyclust` package [@hvitfeldt_tidyclust_2022] extends the `tidymodels` [@kuhn_tidymodels_2020] framework to unsupervised tasks. These packages were built following the principles of the `tidyverse` [@wickham_welcome_2019], with the goal of establishing a consistent and reproducible workflow. Since the design of `tidyclust` is closely modeled off of `parsnip` [@kuhn_parsnip_2024], users are able to specify an unsupervised learning model, then fit and predict on the model using a standardized syntax.
 
-### Core Workflow
+### Model Specification
 
 The `tidymodels` workflow, and therefore the `tidyclust` workflow, mirrors established practices in unsupervised modeling. The first step involves model specification and selection. For example, a K-means model with three clusters would be specified as:
 
@@ -98,32 +93,99 @@ kmeans_spec <- k_means(num_clusters = 3) %>%
   set_engine("stats")
 ```
 
-The name of the function, `k_means`, is the name of the model. The parameter(s), here `num_clusters`, are the required and optional inputs for your model. In this example `num_clusters = 3` represents a K-means model with three clusters. The `set_engine()` function determines what library implementation of the model is being run, and in this example that is the `stats` library. 
+The name of the function, `k_means`, is the name of the model. The parameter(s), here `num_clusters`, are the required and optional inputs for your model. In this example `num_clusters = 3` represents a K-means model with three clusters. The `set_engine()` function determines what package implementation of the model is being run, and in this example that is the `stats` package.
 
-The next step is data preparation, and is taken care of by `recipes` [@kuhn_recipes_2024]. The `recipes` library support a range of data transformations including normalization, standardization, and dummy variable creation as well as data cleaning steps such as missing value removal and imputation. The specification of a recipe follows a declarative syntax, improving both readability and reproducibility in the data cleaning and preparation process.
+### Data Preprocessing
+
+The next step is data preparation, and is taken care of by `recipes` [@kuhn_recipes_2024]. The `recipes` package support a range of data transformations, including: feature scaling (e.g., normalization, standardization), categorical data encoding (e.g., dummy variables), data cleaning (e.g., missing value removal/imputation), and dimensionality  reduction (e.g., PCA, feature filtering). The package follows a declarative syntax, improving both readability by separating the data preparation code from the modeling code and reproducibility by ensuring consistent transformations across training and testing data.
+
+The following example uses the `palmerPenguins` dataset to create a recipe for K-means clustering:
 
 ```{r}
-recipe <- recipe(~ bill_length_mm + bill_depth_mm + sex, data = penguins) %>%
+recipe <- recipe(~ bill_length_mm + body_mass_g + sex, data = penguins) %>%
   step_naomit(all_predictors()) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_dummy(all_nominal_predictors())
 ```
 
-The recipe example above is creating a formula using the `PalmerPenguins` dataset, where `bill_length_mm`, `bill_depth_mm`, and `sex` are the predictor variables. It removes missing values, normalizes the numeric predictors, and converts the categorical predictor into dummy variables. This recipe can be used for different models
+The recipe above defines what predictors to use in the model, then removes any rows with missing values within any of these predictors. Then it normalizes the two numeric predictors and creates dummy variables for the categorical predictor. Since these transformations are applied within the recipe, they do not change the dataset itself. Additionally, the same recipe can be reused across different models built into the `tidyclust` or `tidymodels` framework. Once defined, the recipe can be combined with the model specification in a workflow.
 
-The final steps encompass model fitting and prediction. The fit() method accepts either raw data or a recipe object, and returns a `cluster_fit` object. This fitted object holds the trained model along with any metadata necessary for later operations. 
+### Modeling Workflow
 
-The predict() function takes the fitted object and new observations as inputs, outputting results in a standardized format. The functionality of predict() depends on the type of fitted model, for example the K-means model from before would predict which of the three clusters each new observation in the input data belongs to.
+The `workflows` package [@vaughan_workflows_2024] combines the model definition and feature engineering into a single object, improving reproducibility, reducing risk of human error, and standardizing the unsupervised learning pipeline. The modular design allows users to modify preprocessing steps without changing model specifications and reuse the same workflow elements across projects, ensuring consistency. An implementation using the previous examples would look as follows:
+
+```{r}
+kmeans_workflow <- workflow() %>%  
+  add_recipe(recipe) %>%  
+  add_model(kmeans_spec)
+```
+
+### Model Fitting
+
+The final phase of the `tidyclust` workflow includes model fitting and prediction. The `fit()` function accepts a workflow and trains the model on the data, returning a `cluster_fit` object:
+
+```{r}
+kmeans_fit <- fit(kmeans_workflow, data = penguins)
+```
+
+This fitted object holds the trained model along with any metadata necessary for later operations.
+
+### Model Prediction
+
+The `predict()` function takes in the fitted object and new observations as inputs, outputting results in a standardized format:
+
+```{r}
+cluster_assignment <- predict(kmeans_fit, new_data = penguins_new)
+```
+
+The functionality of `predict()` depends on the type of fitted model, for example the K-means model from before would predict which of the three clusters each new observation in the input data belongs to.
+
+### Hyperparameter Tuning and Model Evaluation
+
+The framework also encompasses model evaluation through through resampling and hyperparameter tuning capabilities. Grid search is implemented using the `tune` package [@kuhn_tune_2024], and can be paired with resampling methods such as cross-validation to evaluate a model. Using the K-means example above:
+
+```{r}
+penguins_cv <- vfold_cv(penguins, v = 5)
+
+tune_spec <- k_means(num_clusters = tune()) %>%
+  set_engine("stats")
+
+tune_workflow <- workflow() %>%  
+  add_recipe(recipe) %>%  
+  add_model(tune_spec)
+
+clust_num_grid <- grid_regular(num_clusters(),
+  levels = 10
+)
+
+rf_grid_search <-
+  tune_cluster(
+    tune_workflow,
+    resamples = penguins_cv,
+    grid = clust_num_grid,
+    metrics = cluster_metric_set(sse_within_total, sse_total, sse_ratio)
+  )
+```
+
+First, cross-validation is set up specifying the number of folds (`v = 5`). In our model we change `num_clusters` from `3` to `tune()` and make a workflow. To establish the range of possible values for `num_clusters`, we use `grid_regular()`, then carry out the grid search in `tune_cluster()`. The metrics on each cross-validation split, for each possible choice in our grid, are specified within `tune_cluster()`.
 
 The remaining sections of this thesis will be dedicated to the examination of the design and implementation choices made while implementing FIM in `tidyclust.` Section 3 covers each step of the workflow detailed above, Section 4 addresses current limitations, and Section 5 concludes with proposed enhancements.
 
 # Methodology
+
 ## Model Specification and Itemset-Based Clustering Framework
+
 ## Prediction Methods for Frequent Itemset Models
+
 ## Hyperparameter Tuning and Performance Metrics
+
 # Limitations
+
 ## Analysis of Implementation Limitations
+
 ## Future Directions
+
 # References
+
 ::: {#refs}
 :::
