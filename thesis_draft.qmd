@@ -4,6 +4,7 @@ format:
     documentclass: report
     papersize: letter
     fontsize: 12pt
+    mainfont: Times New Roman
     linestretch: 1.5
     geometry:
       - left=1.5in
@@ -21,40 +22,23 @@ format:
         \titleformat*{\section}{\normalfont\bfseries}
         \titleformat*{\subsection}{\normalfont\bfseries}
         \titleformat*{\subsubsection}{\normalfont\bfseries}
-        \usepackage{setspace}
-        \doublespacing
-        \usepackage{etoolbox}
-        \makeatletter
-        \patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{plain}}{}{}
-        \makeatother
-        \usepackage{tocloft}
-        \renewcommand{\cfttoctitlefont}{\normalfont\large\bfseries\centering\MakeUppercase}
-        \renewcommand{\cftbeforetoctitleskip}{2in} % 2in from top
-        \renewcommand{\cftaftertoctitle}{\vspace*{\fill}}
-        \renewcommand{\contentsname}{TABLE OF CONTENTS}
-        \usepackage{fancyhdr}
-        \fancypagestyle{plain}{}
-        \pagestyle{fancy}
-        \fancyhf{}
-        \rfoot{\thepage}
-        \renewcommand{\headrulewidth}{0pt}
-        \usepackage{afterpage}
-        \newcommand{\startpagenumbering}{\setcounter{page}{1}}
-    include-before-body: 
+
+    include-before-body:
       - title-page.tex
       - copyright-page.tex
       - committee-page.tex
       - abstract.tex
       - acknowledgments.tex
     toc: true
-    toc-title: ""
     lot: false
     lof: false
     number-sections: true
-editor: source
-eval: false
 bibliography: freq_itemsets_citations.bib
+eval: false
 ---
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
 
 # Introduction
 
