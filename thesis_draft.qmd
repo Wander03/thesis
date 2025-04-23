@@ -22,7 +22,12 @@ format:
         \titleformat*{\section}{\normalfont\bfseries}
         \titleformat*{\subsection}{\normalfont\bfseries}
         \titleformat*{\subsubsection}{\normalfont\bfseries}
-
+        \usepackage{setspace}
+        \doublespacing
+        \usepackage{etoolbox}
+        \makeatletter
+        \patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{plain}}{}{}
+        \makeatother
     include-before-body:
       - title-page.tex
       - copyright-page.tex
