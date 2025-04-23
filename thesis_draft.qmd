@@ -48,6 +48,19 @@ bibliography: freq_itemsets_citations.bib
 eval: false
 ---
 
+```{r}
+#| include: false
+#| message: false
+
+library(tidyverse)
+library(tidyclust)
+library(arules)
+
+data(Groceries)
+groceries <- as.data.frame(as(Groceries, "matrix")) %>%
+  mutate(across(everything(), ~.*1))
+```
+
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
@@ -216,9 +229,55 @@ The remaining sections of this thesis will be dedicated to the examination of th
 
 # Methodology
 
-## Model Specification and Itemset-Based Clustering Framework
+## Model Specification
 
-## Prediction Methods for Frequent Itemset Models
+The model specification for frequent itemset mining follows the same structure as other models in `tidyclust`:
+
+```{r}
+fi_spec <- freq_itemsets(
+  min_support = 0.05, 
+  mining_method = "eclat"
+  ) %>%
+  set_engine("arules")
+```
+
+The only implemented engine is `arules`. There are two arguments: `min_support` is the user specified minimum support value for an itemset, taking a value between 0 and 1, and `mining_method` is an optional argument specifying the algorithm to use (`apriori` or `eclat`), the default being `eclat`. Eclat was selected as the default algorithm since it is faster in most practical cases [@singla_comprehensive_2023]. A default value for `min_support` is not supplied since this value greatly varies depending on the characteristics of the data.
+
+Recipes and workflows are not impacted by any additions that I have made to `tidyclust`. These tools are the same and work with `freq_itemsets` without error. While fitting a `freq_itemsets` model is the same, multiple decisions had to be made to create the desired output. 
+
+## Cluster Assignment Methodology
+
+A strength of the `tidyclust` framework is that the output of each function is standardized, formatted the same way. The main product of a fitted model are the cluster assignments, which are stored in a `tibble` with the sole column `.cluster`. However, unlike other unsupervised learning algorithms (e.g., K-means) that explicitly partition observations into distinct groups, FIM produces a set of co-occuring items without inherent cluster labels. Additionally, in FIM the items (columns) are of interest, while in other unsupervised learning algorithms the observations (rows) are of interest. The following implementation introduces a clustering assignment strategy that assigns items to clusters based on itemset membership and support values:
+
+For each items in the dataset:
+
+1. Relevant Itemset Identification: Finds all itemsets containing the item.
+
+2. Best Itemset Selection: Prioritizes itemsets by:
+
++ Size: Larger itemsets over smaller ones (encouraging broader clusters).
+
++ Support: Higher-support itemsets break ties (favoring more frequent patterns).
+
+3. Cluster Propagation: Assigns all items in the selected itemsets to the same cluster. 
+
+Items that appear in no frequent itemsets are labeled as outliers (Cluster_0_X) while items within frequent itemsets are assigned sequential cluster IDs (Cluster_1, Cluster_2, etc.).
+
+Cheng et al. [-@cheng_discriminative_2007] analyzes the relationship between pattern frequency and discriminative power, demonstrating that frequent patterns with higher support and larger sizes exhibit greater predictive utility in classification tasks. These findings are used as the reasoning for prioritizing larger itemsets with higher supports. 
+
+```{r}
+fi_fit <- fi_spec %>%
+  fit(~ .,
+    data = groceries
+  )
+
+fi_fit %>% 
+  extract_cluster_assignment()
+```
+
+TALK ABOUT CODE OUTPUT?
+
+## Prediction Methods
 
 ## Hyperparameter Tuning and Performance Metrics
 
