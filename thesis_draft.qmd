@@ -94,12 +94,11 @@ An itemset is considered frequent if its support is greater than or equal to a g
 
 ### The Apriori Algorithm
 
-The apriori algorithm [@agrawal_mining_1993] implements a breadth-first search to identify frequent itemsets, leveraging the downward closure property. The method operates as follows:
+The Apriori algorithm [@agrawal_mining_1993] implements a breadth-first search to identify frequent itemsets, leveraging the downward closure property. The method operates as follows:
 
 1.  Initialization ($k = 1$): Scan the transactional dataset $D$ to compute the support of all 1-itemsets $X$. Keep only those with support($X$) $\geq \sigma$, forming the set of frequent 1-itemsets $L_1$.
 
 2.  Candidate Generation ($k > 1$): Generate candidate k-itemsets $C_k$ by joining pairs of frequent (k - 1)-itemsets from $L_{k-1}$ that share the first $k - 2$ items:
-
 $$C_k = \{X \cup Y \mid X, Y \in L_{k - 1}, |X \cap Y| = k - 2\}$$
 
 3.  Pruning: Eliminate any candidate $X \in C_k$ where (k - 1)-subset of $X$ is not in $L_{k - 1}$ (downward closure property)
@@ -115,11 +114,9 @@ $$C_k = \{X \cup Y \mid X, Y \in L_{k - 1}, |X \cap Y| = k - 2\}$$
 The Equivalence Class Transformation (Eclat) algorithm [@zaki_scalable_2000] is an alternative to Apriori that uses a depth-first search strategy and vertical data representation. Instead of scanning the dataset repeatedly, Eclat represents transactions as tid-lists (transaction ID lists), which map each item or itemset to the IDs of transactions in which it appears. The method operates as follows:
 
 1.  Vertical Representation: Transform the transaction dataset $D$ into a vertical format, where each item $x$ maintains its tid-list:
-
 $$T(x) = {t \in D \mid x \in t}$$
 
 Initialize the set of frequent 1-items:
-
 $$L_1 = \{\{x\} \mid |T(x)| \geq \sigma \times |D|\}$$
 
 2.  Depth-First Search: For each frequent itemset $X \in L_k$:
@@ -142,7 +139,7 @@ The `tidyclust` package [@hvitfeldt_tidyclust_2022] extends the `tidymodels` [@k
 
 ### Model Specification
 
-The `tidymodels` workflow, and therefore the `tidyclust` workflow, mirrors established practices in unsupervised modeling. The first step involves model specification and selection. For example, a K-means model with three clusters would be specified as:
+The `tidyclust` workflow mirrors established practices in unsupervised modeling. The first step involves model specification and selection. For example, a K-means model with three clusters would be specified as:
 
 ```{r}
 kmeans_spec <- k_means(num_clusters = 3) %>%
@@ -158,13 +155,16 @@ The next step is data preparation, and is taken care of by `recipes` [@kuhn_reci
 The following example uses the `palmerPenguins` dataset to create a recipe for K-means clustering:
 
 ```{r}
-recipe <- recipe(~ bill_length_mm + body_mass_g + sex, data = penguins) %>%
+recipe <- recipe(
+  ~ bill_length_mm + body_mass_g + sex, 
+  data = penguins
+  ) %>%
   step_naomit(all_predictors()) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_dummy(all_nominal_predictors())
 ```
 
-The recipe above defines what predictors to use in the model, then removes any rows with missing values within any of these predictors. Then it normalizes the two numeric predictors and creates dummy variables for the categorical predictor. Since these transformations are applied within the recipe, they do not change the dataset itself. Additionally, the same recipe can be reused across different models built into the `tidyclust` or `tidymodels` framework. Once defined, the recipe can be combined with the model specification in a workflow.
+The recipe above defines what predictors to use in the model, then removes any rows with missing values within any of these predictors. It also normalizes the two numeric predictors and creates dummy variables for the categorical predictor. Since these transformations are applied within the recipe, they do not change the dataset itself. Additionally, the same recipe can be reused across different models built into the `tidyclust` or `tidymodels` framework. Once defined, the recipe can be combined with the model specification in a workflow.
 
 ### Modeling Workflow
 
@@ -198,7 +198,7 @@ The functionality of `predict()` depends on the type of fitted model, for exampl
 
 ### Hyperparameter Tuning and Model Evaluation
 
-The framework also encompasses model evaluation through through resampling and hyperparameter tuning capabilities. Grid search is implemented using the `tune` package [@kuhn_tune_2024], and can be paired with resampling methods such as cross-validation to evaluate a model. Using the K-means example above:
+The `tidyclust` framework also encompasses model evaluation through through resampling and hyperparameter tuning capabilities. Grid search is implemented using the `tune` package [@kuhn_tune_2024], and can be paired with resampling methods such as cross-validation to evaluate a model. Using the K-means example above:
 
 ```{r}
 penguins_cv <- vfold_cv(penguins, v = 5)
@@ -210,8 +210,8 @@ tune_workflow <- workflow() %>%
   add_recipe(recipe) %>%  
   add_model(tune_spec)
 
-clust_num_grid <- grid_regular(num_clusters(),
-  levels = 10
+clust_num_grid <- grid_regular(num_clusters(3, 10),
+  levels = 5
 )
 
 rf_grid_search <-
@@ -219,7 +219,11 @@ rf_grid_search <-
     tune_workflow,
     resamples = penguins_cv,
     grid = clust_num_grid,
-    metrics = cluster_metric_set(sse_within_total, sse_total, sse_ratio)
+    metrics = cluster_metric_set(
+      sse_within_total, 
+      sse_total, 
+      sse_ratio
+      )
   )
 ```
 
@@ -243,11 +247,27 @@ fi_spec <- freq_itemsets(
 
 The only implemented engine is `arules`. There are two arguments: `min_support` is the user specified minimum support value for an itemset, taking a value between 0 and 1, and `mining_method` is an optional argument specifying the algorithm to use (`apriori` or `eclat`), the default being `eclat`. Eclat was selected as the default algorithm since it is faster in most practical cases [@singla_comprehensive_2023]. A default value for `min_support` is not supplied since this value greatly varies depending on the characteristics of the data.
 
-Recipes and workflows are not impacted by any additions that I have made to `tidyclust`. These tools are the same and work with `freq_itemsets` without error. While fitting a `freq_itemsets` model is the same, multiple decisions had to be made to create the desired output. 
+Recipes and workflows are not impacted by any additions that I have made to `tidyclust`. These tools are the same and work with `freq_itemsets` without error.
 
 ## Cluster Assignment Methodology
 
-A strength of the `tidyclust` framework is that the output of each function is standardized, formatted the same way. The main product of a fitted model are the cluster assignments, which are stored in a `tibble` with the sole column `.cluster`. However, unlike other unsupervised learning algorithms (e.g., K-means) that explicitly partition observations into distinct groups, FIM produces a set of co-occuring items without inherent cluster labels. Additionally, in FIM the items (columns) are of interest, while in other unsupervised learning algorithms the observations (rows) are of interest. The following implementation introduces a clustering assignment strategy that assigns items to clusters based on itemset membership and support values:
+While fitting a `freq_itemsets` model is the same, multiple decisions had to be made to create the desired output:
+
+```{r}
+fi_fit <- fi_spec %>%
+  fit(~ .,
+    data = groceries
+  )
+```
+
+A strength of the `tidyclust` framework is that the output of each function is standardized, formatted the same way. The main product of a fitted model are the cluster assignments, which are stored in a `tibble` with the sole column `.cluster`.
+
+```{r}
+fi_fit %>% 
+  extract_cluster_assignment()
+```
+
+However, unlike other unsupervised learning algorithms (e.g., K-means) that explicitly partition observations into distinct groups, FIM produces a set of co-occuring items without inherent cluster labels. Additionally, in FIM the items (columns) are of interest, while in other unsupervised learning algorithms the observations (rows) are of interest. The following implementation introduces a clustering assignment strategy that assigns items to clusters based on itemset membership and support values:
 
 For each items in the dataset:
 
@@ -255,29 +275,55 @@ For each items in the dataset:
 
 2. Best Itemset Selection: Prioritizes itemsets by:
 
-+ Size: Larger itemsets over smaller ones (encouraging broader clusters).
+    + Size: Larger itemsets over smaller ones (encouraging broader clusters).
 
-+ Support: Higher-support itemsets break ties (favoring more frequent patterns).
+    + Support: Higher-support itemsets break ties (favoring more frequent patterns).
 
 3. Cluster Propagation: Assigns all items in the selected itemsets to the same cluster. 
+
+If an item has already been assigned a Cluster, then the best itemset is compared to the best itemset used for this Cluster assignment. The same itemset prioritization is applied, and if the new best itemset is superior then all relevant items are assigned to a new Cluster.
 
 Items that appear in no frequent itemsets are labeled as outliers (Cluster_0_X) while items within frequent itemsets are assigned sequential cluster IDs (Cluster_1, Cluster_2, etc.).
 
 Cheng et al. [-@cheng_discriminative_2007] analyzes the relationship between pattern frequency and discriminative power, demonstrating that frequent patterns with higher support and larger sizes exhibit greater predictive utility in classification tasks. These findings are used as the reasoning for prioritizing larger itemsets with higher supports. 
 
-```{r}
-fi_fit <- fi_spec %>%
-  fit(~ .,
-    data = groceries
-  )
+## Prediction Methods
 
-fi_fit %>% 
-  extract_cluster_assignment()
+Similar to the fit method, while the syntax for predicting using a fitted `freq_itemsets` model is the same, the input and methodology of the predict function differs from other `tidyclust` models:
+
+```{r}
+fi_pred <- fi_fit %>%
+  predict(new_data = new_groceries)
 ```
 
-TALK ABOUT CODE OUTPUT?
+When deciding what it means to predict using frequent itemsets, my goal was to create a method that has practical use in a real world setting. This lead to implementing a recommendation system, where the new data will have partial information about a transaction and predicts which other items are likely to be in the transaction. For example, suppose a customer in a grocery store items `A` and `B` in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where `A` and `B` appeared together.
 
-## Prediction Methods
+The implementation of the recommendation system was inspired by traditional association rule mining such as CARs [@liu_integrating_1998] and usage-based recommendations [@mobasher_effective_2001]. The method predicts item-level probabilities using the confidence from frequent itemsets, retains interpretability from a rule-based reasoning approach, and handles sparse data through a global support fallback. Specifically, for each transaction in the new data:
+
+1. Missing Item Identification: Finds all missing items in the transaction.
+
+For each missing item:
+
+1. Relevant Itemset Identification: Finds all itemsets containing the item.
+
+2. Context Filtering: Retain itemsets that include at least one observed item from the transaction.
+
+3. Confidence Aggregation: For each retained itemset, compute the confidence of the association where
+$$\text{confidence} = \frac{\text{support(itemset)}}{\text{support(observed items in itemset)}}$$
+
+4. Prediction Generation: Average the confidences across all retained itemsets.
+
+5. Fallback Handling: If there are no relevant or retained itemsets, use the items global support (frequency in training data) as the prediction. If the item does not appear in any frequent itemsets, then this global support will be 0.
+
+Aside from the `new_data` argument, `predict()` has the optional `type` argument which takes either `'raw'` or `'cluster'`. The `'raw'` option returns the raw prediction probabilities, while the default option `'cluster'` applies a threshold (0.5) to convert probabilities to binary predictions. Both options return the predictions as a `tibble` with the sole column `.pred_cluster`. 
+
+While this `tibble` format is standardized across `tidyclust` predict outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `item` column represents each item (column) from the transaction, and `.obs_item` is `1` or `0` for any observed items and `NA` for any missing items. The `.pred_item` column is the opposite of the `.obs_item` column, where any observed items are `NA` and any missing items are either the raw or binary predicted values. This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function `extract_predictions` takes the `tibble` output and reformates it to a single data frame.
+
+```{r}
+fi_pred %>%
+  extract_predictions
+```
+
 
 ## Hyperparameter Tuning and Performance Metrics
 
