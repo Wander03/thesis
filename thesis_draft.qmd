@@ -38,6 +38,7 @@ format:
         \titleformat*{\section}{\normalfont\bfseries}
         \titleformat*{\subsection}{\normalfont\bfseries}
         \titleformat*{\subsubsection}{\normalfont\bfseries}
+        
         \usepackage{setspace}
         \doublespacing
         \usepackage{etoolbox}
@@ -196,7 +197,27 @@ cluster_assignment <- predict(kmeans_fit, new_data = penguins_new)
 
 The functionality of `predict()` depends on the type of fitted model, for example the K-means model from before would predict which of the three clusters each new observation in the input data belongs to.
 
-### Hyperparameter Tuning and Model Evaluation
+### Metrics
+
+Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, approaches exit metrics that measure the quality of the created clusters. For K-means, these metrics are sum of squared error (SSE) and silhouette. Ignoring how these metrics work, we can calculate them `tidymodels` as follows:
+
+```{r}
+kmeans_fit %>% 
+  sse_within_total()
+
+kmeans_fit %>% 
+  sse_total()
+
+kmeans_fit %>% 
+  sse_ratio()
+
+kmeans_fit %>% 
+  silhouette_avg(penguins)
+```
+
+Certain models in `tidyclust` may have different metrics, however they can all be calculated in the format above.
+
+### Hyperparameter Tuning
 
 The `tidyclust` framework also encompasses model evaluation through through resampling and hyperparameter tuning capabilities. Grid search is implemented using the `tune` package [@kuhn_tune_2024], and can be paired with resampling methods such as cross-validation to evaluate a model. Using the K-means example above:
 
@@ -317,22 +338,63 @@ $$\text{confidence} = \frac{\text{support(itemset)}}{\text{support(observed item
 
 Aside from the `new_data` argument, `predict()` has the optional `type` argument which takes either `'raw'` or `'cluster'`. The `'raw'` option returns the raw prediction probabilities, while the default option `'cluster'` applies a threshold (0.5) to convert probabilities to binary predictions. Both options return the predictions as a `tibble` with the sole column `.pred_cluster`. 
 
-While this `tibble` format is standardized across `tidyclust` predict outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `item` column represents each item (column) from the transaction, and `.obs_item` is `1` or `0` for any observed items and `NA` for any missing items. The `.pred_item` column is the opposite of the `.obs_item` column, where any observed items are `NA` and any missing items are either the raw or binary predicted values. This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function `extract_predictions` takes the `tibble` output and reformates it to a single data frame.
+While this `tibble` format is standardized across `tidyclust` predict outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `item` column represents each item (column) from the transaction, and `.obs_item` is `1` or `0` for any observed items and `NA` for any missing items. The `.pred_item` column is the opposite of the `.obs_item` column, where any observed items are `NA` and any missing items are either the raw or binary predicted values. This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function `extract_predictions` takes the `tibble` output and reformats it to a single data frame.
 
 ```{r}
 fi_pred %>%
   extract_predictions
 ```
 
+## Metrics
 
-## Hyperparameter Tuning and Performance Metrics
+While the quality of frequent itemsets is traditionally assessed by support values, support alone does not guarantee predictive performance. Since the predict methodology follows that of a recommendation system, the results should be evaluated using the same metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The inputs are a list of predicted values and a list of the true values, and the function `augment_itemset_predict` in `tidyclust` formats the predict output as such.
+
+```{r}
+fi_fit %>%
+  predict(new_data = new_groceries, type = 'raw') %>%
+  augment_itemset_predict(pred_output, truth) %>%
+  rmse(truth, preds)
+
+fi_fit %>%
+  predict(new_data = new_groceries, type = 'cluster') %>%
+  augment_itemset_predict(pred_output, truth) %>%
+  mutate(
+    truth = factor(truth, levels = c(0, 1)), 
+    preds = factor(preds, levels = c(0, 1))
+    ) %>%
+  precision(truth, preds)
+```
+
+When using RMSE, the `raw` predict output should be used, while accuracy, precision, and recall will use the `cluster` output or user thresholded `raw` output. Caution should be used when looking at accuracy, precision, and recall since they can be misleading for imbalanced datasets (where items are rarely purchased). In such cases, I recommend using F1-Score as a balance between precision and recall and looking at precision-recall curves [@saito_precision-recall_2015] to determine the best threshold value.
+
+```{r}
+fi_fit %>%
+  predict(new_data = new_groceries, type = 'raw') %>%
+  augment_itemset_predict(pred_output, truth) %>%
+  mutate(truth = factor(truth, levels = c(0, 1))) %>%
+  pr_curve(truth, preds) %>%
+  autoplot()
+```
+
+## Hyperparameter Tuning
+
+The sole parameter capable of being tuned in a FIM model is `min_support`. As noted in the Model Specification section, there is no default `min_support` value since this value varies depending on the characteristics of the dataset. Therefore, selecting the correct value is imperative for finding useful frequent itemsets. The default grid for `min_support` is from 0.1 to 0.5. The lower bound of 0.1 was chosen to avoid reporting too many frequent itemsets, even for smaller datasets, while the upper bound of 0.5 was selected since it ensures that at each frequent itemset has a support of at least 50%. If this range does not work, then the user can explore their dataset and create their own custom range of values. 
+
+```{r}
+min_support_grid <- grid_regular(
+  min_support(), 
+  levels = 10
+  )
+```
+
+Usually the above object is paired with `tune_cluster` as seen in the previous K-means example, however cross-validation is not currently implemented for FIM.
 
 # Limitations
 
 ## Analysis of Implementation Limitations
 
 ## Future Directions
-
+The `tune` package relies on the `dials` package [@kuhn_dials_2024] 
 # References
 
 ::: {#refs}
