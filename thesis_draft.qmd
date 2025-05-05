@@ -108,9 +108,7 @@ Although FIM has become more efficient, practical implementations remain confine
 
 Another limitation lies in the interpretation of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
 
-This thesis seeks to address these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms to `tidyclust`, this work allows itemset mining to be used within unsupervised workflows. It also creates a standard methodology for predicting missing-items, and lays a foundation for future additions of mining and clustering techniques within `tidyclust`.
-
-NOTE: add github
+This thesis seeks to address these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms to `tidyclust`, this work allows itemset mining to be used within unsupervised workflows. It also creates a standard methodology for predicting missing-items, and lays a foundation for future additions of mining and clustering techniques within `tidyclust`. The source code for my implementation can be found at https://github.com/Wander03/tidyclust.
 
 # Background
 
@@ -300,7 +298,7 @@ The remaining sections of this thesis will be dedicated to the examination of th
 
 ## Model Specification
 
-The model specification for frequent itemset mining follows the same structure as other models in `tidyclust`:
+The model specification for frequent itemset mining follows the same structure as other models in `tidyclust`, creating a `fi_spec()` object:
 
 ```{r}
 #| prompt: true
@@ -310,8 +308,6 @@ fi_spec <- freq_itemsets(
   ) %>%
   set_engine("arules")
 ```
-
-NOTE: fi_spec()
 
 The only implemented engine is `arules`. There are two arguments: `min_support` is the user specified minimum support value for an itemset, taking a value between 0 and 1, and `mining_method` is an optional argument specifying the algorithm to use (`apriori` or `eclat`), the default being `eclat`. Eclat was selected as the default algorithm since it is faster in most practical cases [@singla_comprehensive_2023]. A default value for `min_support` is not supplied since this value greatly varies depending on the characteristics of the data.
 
