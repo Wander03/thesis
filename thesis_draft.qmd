@@ -309,6 +309,8 @@ fi_spec <- freq_itemsets(
   set_engine("arules")
 ```
 
+NOTE: fi_spec()
+
 The only implemented engine is `arules`. There are two arguments: `min_support` is the user specified minimum support value for an itemset, taking a value between 0 and 1, and `mining_method` is an optional argument specifying the algorithm to use (`apriori` or `eclat`), the default being `eclat`. Eclat was selected as the default algorithm since it is faster in most practical cases [@singla_comprehensive_2023]. A default value for `min_support` is not supplied since this value greatly varies depending on the characteristics of the data.
 
 Recipes and workflows are not impacted by any additions that I have made to `tidyclust`. These tools are the same and work with `freq_itemsets` without error.
