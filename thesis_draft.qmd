@@ -96,6 +96,7 @@ library(arules)
 data(Groceries)
 groceries <- as.data.frame(as(Groceries, "matrix")) %>%
   mutate(across(everything(), ~.*1))
+new_groceries <- 
 ```
 
 \mainmatter
