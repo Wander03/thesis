@@ -20,32 +20,68 @@ format:
     lot: false
     lof: false
     number-sections: true
+    citation-style: apa
+    bibliography: freq_itemsets_citations.bib
+    csl: apa-6th-edition.csl
     include-in-header:
       text: |
-        \AtBeginDocument{\pagenumbering{roman}}
+        % Load the etoolbox package for LaTeX command patching
         \usepackage{etoolbox}
-        \apptocmd{\mainmatter}{%
+        
+        % FRONT MATTER NUMBERING
+        % Set page numbering to roman numerals (i, ii, iii) for front matter
+        % This covers title page, abstract, TOC, etc.
+        \pagenumbering{roman}
+        
+        % MAIN MATTER CONTROL
+        % Define commands to handle transitions between document sections
+        % \frontmatter - dummy command (does nothing, just for semantic structure)
+        \newcommand{\frontmatter}{}
+        
+        % \mainmatter - switches to main content numbering:
+        % 1. \clearpage - ensures transition happens on new page
+        % 2. \pagenumbering{arabic} - switches to 1, 2, 3 numbering
+        % 3. \setcounter{page}{1} - explicitly starts at page 1
+        \newcommand{\mainmatter}{%
+          \clearpage
           \pagenumbering{arabic}%
           \setcounter{page}{1}%
-        }{}{}
-
+        }
+        
+        % CHAPTER/SECTION FORMATTING
+        % Customize heading styles using titlesec package
         \usepackage{titlesec}
+        
+        % Chapter title formatting:
+        % [display] - style with separate lines for label and title
+        % {\normalfont\centering} - normal font, centered
+        % {\chaptertitlename\ \thechapter} - shows "Chapter X"
+        % {0pt} - vertical space between label and title (none)
+        % {\MakeUppercase} - makes chapter title uppercase
         \titleformat{\chapter}[display]
           {\normalfont\centering}
           {\chaptertitlename\ \thechapter}
           {0pt}
           {\MakeUppercase}
+        
+        % Section/subsection formatting:
+        % * - applies to all levels
+        % \normalfont\bfseries - normal font with bold weight
         \titleformat*{\section}{\normalfont\bfseries}
         \titleformat*{\subsection}{\normalfont\bfseries}
         \titleformat*{\subsubsection}{\normalfont\bfseries}
         
+        % LINE SPACING
+        % Set document to double spacing
         \usepackage{setspace}
         \doublespacing
-        \usepackage{etoolbox}
+        
+        % CHAPTER PAGE STYLE
+        % Ensure chapter pages use 'plain' page style (no headers, just page number)
+        % This uses etoolbox to patch the \chapter command
         \makeatletter
         \patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{plain}}{}{}
         \makeatother
-bibliography: freq_itemsets_citations.bib
 eval: false
 ---
 
@@ -62,8 +98,7 @@ groceries <- as.data.frame(as(Groceries, "matrix")) %>%
   mutate(across(everything(), ~.*1))
 ```
 
-\pagenumbering{arabic}
-\setcounter{page}{1}
+\mainmatter
 
 # Introduction
 
@@ -143,6 +178,7 @@ The `tidyclust` package [@hvitfeldt_tidyclust_2022] extends the `tidymodels` [@k
 The `tidyclust` workflow mirrors established practices in unsupervised modeling. The first step involves model specification and selection. For example, a K-means model with three clusters would be specified as:
 
 ```{r}
+#| prompt: true
 kmeans_spec <- k_means(num_clusters = 3) %>%
   set_engine("stats")
 ```
@@ -156,6 +192,7 @@ The next step is data preparation, and is taken care of by `recipes` [@kuhn_reci
 The following example uses the `palmerPenguins` dataset to create a recipe for K-means clustering:
 
 ```{r}
+#| prompt: true
 recipe <- recipe(
   ~ bill_length_mm + body_mass_g + sex, 
   data = penguins
@@ -172,6 +209,7 @@ The recipe above defines what predictors to use in the model, then removes any r
 The `workflows` package [@vaughan_workflows_2024] combines the model definition and feature engineering into a single object, improving reproducibility, reducing risk of human error, and standardizing the unsupervised learning pipeline. The modular design allows users to modify preprocessing steps without changing model specifications and reuse the same workflow elements across projects, ensuring consistency. An implementation using the previous examples would look as follows:
 
 ```{r}
+#| prompt: true
 kmeans_workflow <- workflow() %>%  
   add_recipe(recipe) %>%  
   add_model(kmeans_spec)
@@ -182,6 +220,7 @@ kmeans_workflow <- workflow() %>%
 The final phase of the `tidyclust` workflow includes model fitting and prediction. The `fit()` function accepts a workflow and trains the model on the data, returning a `cluster_fit` object:
 
 ```{r}
+#| prompt: true
 kmeans_fit <- fit(kmeans_workflow, data = penguins)
 ```
 
@@ -192,6 +231,7 @@ This fitted object holds the trained model along with any metadata necessary for
 The `predict()` function takes in the fitted object and new observations as inputs, outputting results in a standardized format:
 
 ```{r}
+#| prompt: true
 cluster_assignment <- predict(kmeans_fit, new_data = penguins_new)
 ```
 
@@ -202,6 +242,7 @@ The functionality of `predict()` depends on the type of fitted model, for exampl
 Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, approaches exit metrics that measure the quality of the created clusters. For K-means, these metrics are sum of squared error (SSE) and silhouette. Ignoring how these metrics work, we can calculate them `tidymodels` as follows:
 
 ```{r}
+#| prompt: true
 kmeans_fit %>% 
   sse_within_total()
 
@@ -222,6 +263,7 @@ Certain models in `tidyclust` may have different metrics, however they can all b
 The `tidyclust` framework also encompasses model evaluation through through resampling and hyperparameter tuning capabilities. Grid search is implemented using the `tune` package [@kuhn_tune_2024], and can be paired with resampling methods such as cross-validation to evaluate a model. Using the K-means example above:
 
 ```{r}
+#| prompt: true
 penguins_cv <- vfold_cv(penguins, v = 5)
 
 tune_spec <- k_means(num_clusters = tune()) %>%
@@ -259,6 +301,7 @@ The remaining sections of this thesis will be dedicated to the examination of th
 The model specification for frequent itemset mining follows the same structure as other models in `tidyclust`:
 
 ```{r}
+#| prompt: true
 fi_spec <- freq_itemsets(
   min_support = 0.05, 
   mining_method = "eclat"
@@ -275,6 +318,7 @@ Recipes and workflows are not impacted by any additions that I have made to `tid
 While fitting a `freq_itemsets` model is the same, multiple decisions had to be made to create the desired output:
 
 ```{r}
+#| prompt: true
 fi_fit <- fi_spec %>%
   fit(~ .,
     data = groceries
@@ -284,6 +328,7 @@ fi_fit <- fi_spec %>%
 A strength of the `tidyclust` framework is that the output of each function is standardized, formatted the same way. The main product of a fitted model are the cluster assignments, which are stored in a `tibble` with the sole column `.cluster`.
 
 ```{r}
+#| prompt: true
 fi_fit %>% 
   extract_cluster_assignment()
 ```
@@ -313,6 +358,7 @@ Cheng et al. [-@cheng_discriminative_2007] analyzes the relationship between pat
 Similar to the fit method, while the syntax for predicting using a fitted `freq_itemsets` model is the same, the input and methodology of the predict function differs from other `tidyclust` models:
 
 ```{r}
+#| prompt: true
 fi_pred <- fi_fit %>%
   predict(new_data = new_groceries)
 ```
@@ -341,6 +387,7 @@ Aside from the `new_data` argument, `predict()` has the optional `type` argument
 While this `tibble` format is standardized across `tidyclust` predict outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `item` column represents each item (column) from the transaction, and `.obs_item` is `1` or `0` for any observed items and `NA` for any missing items. The `.pred_item` column is the opposite of the `.obs_item` column, where any observed items are `NA` and any missing items are either the raw or binary predicted values. This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function `extract_predictions` takes the `tibble` output and reformats it to a single data frame.
 
 ```{r}
+#| prompt: true
 fi_pred %>%
   extract_predictions
 ```
@@ -350,6 +397,7 @@ fi_pred %>%
 While the quality of frequent itemsets is traditionally assessed by support values, support alone does not guarantee predictive performance. Since the predict methodology follows that of a recommendation system, the results should be evaluated using the same metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The inputs are a list of predicted values and a list of the true values, and the function `augment_itemset_predict` in `tidyclust` formats the predict output as such.
 
 ```{r}
+#| prompt: true
 fi_fit %>%
   predict(new_data = new_groceries, type = 'raw') %>%
   augment_itemset_predict(pred_output, truth) %>%
@@ -368,6 +416,7 @@ fi_fit %>%
 When using RMSE, the `raw` predict output should be used, while accuracy, precision, and recall will use the `cluster` output or user thresholded `raw` output. Caution should be used when looking at accuracy, precision, and recall since they can be misleading for imbalanced datasets (where items are rarely purchased). In such cases, I recommend using F1-Score as a balance between precision and recall and looking at precision-recall curves [@saito_precision-recall_2015] to determine the best threshold value.
 
 ```{r}
+#| prompt: true
 fi_fit %>%
   predict(new_data = new_groceries, type = 'raw') %>%
   augment_itemset_predict(pred_output, truth) %>%
@@ -381,6 +430,7 @@ fi_fit %>%
 The sole parameter capable of being tuned in a FIM model is `min_support`. As noted in the Model Specification section, there is no default `min_support` value since this value varies depending on the characteristics of the dataset. Therefore, selecting the correct value is imperative for finding useful frequent itemsets. The default grid for `min_support` is from 0.1 to 0.5. The lower bound of 0.1 was chosen to avoid reporting too many frequent itemsets, even for smaller datasets, while the upper bound of 0.5 was selected since it ensures that at each frequent itemset has a support of at least 50%. If this range does not work, then the user can explore their dataset and create their own custom range of values. 
 
 ```{r}
+#| prompt: true
 min_support_grid <- grid_regular(
   min_support(), 
   levels = 10
@@ -402,6 +452,7 @@ The current clustering method prioritizes itemsets based on size and support, as
 The prediction implementation currently averages confidence scores across all matching itemsets to determine. Additional methods may improve predictive performance, such as using the maximum confidence [@mobasher_effective_2001] or a weighted average by itemset size or support. These methods could be added as an optional parameter for the user in the predict function: 
 
 ```{r}
+#| prompt: true
 predict(
   fi_fit,
   new_data = new_groceries,
