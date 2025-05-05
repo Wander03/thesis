@@ -1,0 +1,744 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  article]{jss}
+
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\usepackage{orcidlink,thumbpdf,lmodern}
+
+\newcommand{\class}[1]{`\code{#1}'}
+\newcommand{\fct}[1]{\code{#1()}}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+\makeatletter
+\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
+\makeatother
+\makeatletter
+\@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}{}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, enhanced, boxrule=0pt, interior hidden, frame hidden, sharp corners, breakable]}{\end{tcolorbox}}\fi
+\makeatother
+
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={tidyclust: Implementation of Frequent Itemset Mining {[}WIP{]}},
+  pdfauthor={Andrew Kerr},
+  pdfkeywords={JSS, style guide, comma-separated, not capitalized, R},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+%% -- Article metainformation (author, title, ...) -----------------------------
+
+%% Author information
+\author{Andrew Kerr~\orcidlink{0000-0003-0918-3766}\\California
+Polytechnic State University}
+\Plainauthor{Andrew Kerr} %% comma-separated
+
+\title{tidyclust: Implementation of Frequent Itemset Mining {[}WIP{]}}
+\Plaintitle{tidyclust: Implementation of Frequent Itemset Mining
+{[}WIP{]}} %% without formatting
+
+%% an abstract and keywords
+\Abstract{WIP}
+
+%% at least one keyword must be supplied
+\Keywords{JSS, style guide, comma-separated, not
+capitalized, \proglang{R}}
+\Plainkeywords{JSS, style guide, comma-separated, not capitalized, R}
+
+%% publication information
+%% NOTE: Typically, this can be left commented and will be filled out by the technical editor
+%% \Volume{50}
+%% \Issue{9}
+%% \Month{June}
+%% \Year{2012}
+%% \Submitdate{2012-06-04}
+%% \Acceptdate{2012-06-04}
+%% \setcounter{page}{1}
+%% \Pages{1--xx}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+Andrew Kerr\\
+Department of Statistics\\
+959 Higuera St.\\
+San Luis Obispo United States of America\\
+E-mail: \email{adkerr2001@gmail.com}\\
+URL: \url{https://github.com/Wander03/tidyclust}\\
+\\~
+
+}
+
+\begin{document}
+\maketitle
+
+
+\section{Introduction}\label{sec-intro}
+
+Since the early 1990s, frequent itemset mining (FIM) has been an
+important area of research in data mining. The work of Agrawal,
+Imieliński, and Swami \citeyearpar{agrawal_mining_1993} introduced the
+Apriori algorithm, which established the foundation for identifying
+co-occurring items in transactional datasets. Shortly after, algorithms
+such as FP-growth's FP-tree structure \citep{han_mining_2000} and
+Elcat's vertical tid-list approach \citep{zaki_scalable_2000}
+significantly improved the performance and scalability of FIM
+techniques. These techniques have since been applied to a wide range of
+applications, including market basket analysis, web personalization
+\citep{mobasher_effective_2001}, and associative classification
+\citep{liu_integrating_1998}.
+
+Although FIM has become more efficient, practical implementations remain
+confined to specialized software packages. The \proglang{R}
+\citep{r_core_team_r_2024} programming environment offers itemset mining
+through \pkg{arules} \citep{hahsler_arules_2011}, while
+\proglang{Python} users rely on \pkg{mlxtend}
+\citep{raschka_mlxtend_2018} for similar functionality. However, these
+implementations share the same limitation: they operate as stand alone
+itemset mining applications rather than as integrated components in a
+modern data science workflow. The absence of native integration with
+frameworks like \pkg{tidymodels} \citep{kuhn_tidymodels_2020} or
+\pkg{scikit-learn} \citep{buitinck_api_2013} leaves a gap, forcing
+analysts to create their own custom solutions.
+
+Another limitation lies in the interpretation of FIM results. Frequent
+itemsets are commonly treated as either final outputs, or inputs for
+generating association rules. However, research by Cheng et al.
+\citeyearpar{cheng_discriminative_2007} demonstrated that itemsets can
+also be used in classification tasks, while other studies have explored
+how itemsets can be used in clustering tasks
+\citep{mobasher_effective_2001, wickramaratna_predicting_2009}. Although
+these approaches lack a standardized method, the use of FIM in these
+methods indicates a potential for integration with clustering workflows.
+
+This thesis seeks to address these limitations by introducing FIM to
+\pkg{tidyclust} \citep{hvitfeldt_tidyclust_2022}, a package designed for
+unsupervised learning algorithms within the \pkg{tidymodel} framework.
+By adapting the Apriori and Eclat algorithms to \pkg{tidyclust}, this
+work allows itemset mining to be used within unsupervised workflows. It
+also creates a standard methodology for predicting missing-items, and
+lays a foundation for future additions of mining and clustering
+techniques within \pkg{tidyclust}.
+
+\section{Models and software}\label{sec-models}
+
+\subsection{Frequent Itemset Mining}\label{frequent-itemset-mining}
+
+Frequent itemset mining (FIM) methods were developed to identify the
+elements of a transactional dataset that often occur together. The
+original use is in market basket research \citep{agrawal_mining_1993},
+where FIM techniques help discover items commonly bought together. For
+example, a pattern could be that milk and eggs are frequently bought
+together in the same transaction. This type of information can be used
+by the shop owner to place these items apart from each other, causing
+customers to walk through more of the store. Although this task may
+appear simple, the number of itemsets rapidly grows in wider datasets,
+resulting in the development of more efficient algorithms. One such
+development is the principle that if an itemset is frequent, then so are
+all of its subsets; a property known as the Apriori principle or
+downward closure property. This principle significantly reduces the
+search space by systematically pruning candidate itemsets that do not
+meet a minimum support threshold. The two methods implemented in
+\pkg{tidyclust}, Apriori \citep{agrawal_mining_1993} and Eclat
+\citep{zaki_scalable_2000}, both operate on this principle.
+
+\subsection{tidyclust}\label{tidyclust}
+
+The \pkg{tidyclust} package \citep{hvitfeldt_tidyclust_2022} extends the
+\pkg{tidymodels} \citep{kuhn_tidymodels_2020} framework to unsupervised
+tasks. These packages were built following the principles of the
+\pkg{tidyverse} \citep{wickham_welcome_2019}, with the goal of
+establishing a consistent and reproducible workflow. Since the design of
+\pkg{tidyclust} is closely modeled off of \pkg{parsnip}
+\citep{kuhn_parsnip_2024}, users are able to specify an unsupervised
+learning model, then fit and predict on the model using a standardized
+syntax.
+
+\section{FIM in tidyclust}\label{sec-implementation}
+
+\subsection{Model Specification}\label{model-specification}
+
+The model specification for frequent itemset mining follows the same
+structure as other models in \pkg{tidyclust}:
+
+\begin{verbatim}
+R>  fi_spec <- freq_itemsets(
++   min_support = 0.05, 
++   mining_method = "eclat"
++   ) %>%
++   set_engine("arules")
+\end{verbatim}
+
+The only implemented engine is \pkg{arules}. There are two arguments:
+\texttt{min\_support} is the user specified minimum support value for an
+itemset, taking a value between 0 and 1, and \texttt{mining\_method} is
+an optional argument specifying the algorithm to use (\texttt{apriori}
+or \texttt{eclat}), the default being \texttt{eclat}. Eclat was selected
+as the default algorithm since it is faster in most practical cases
+\citep{singla_comprehensive_2023}. A default value for
+\texttt{min\_support} is not supplied since this value greatly varies
+depending on the characteristics of the data.
+
+Recipes and workflows are not impacted by any additions that I have made
+to \pkg{tidyclust}. These tools are the same and work with
+freq\_itemsets{[}FORMAT{]} without error.
+
+\subsection{Cluster Assignment
+Methodology}\label{cluster-assignment-methodology}
+
+While fitting a freq\_itemsets{[}FORMAT{]} model is the same, multiple
+decisions had to be made to create the desired output:
+
+\begin{verbatim}
+R> fi_fit <- fi_spec %>%
++  fit(~ .,
++    data = groceries
++  )
+\end{verbatim}
+
+A strength of the \pkg{tidyclust} framework is that the output of each
+function is standardized, formatted the same way. The main product of a
+fitted model are the cluster assignments, which are stored in a
+\texttt{tibble} with the sole column \texttt{.cluster}.
+
+\begin{verbatim}
+R> fi_fit %>% 
++  extract_cluster_assignment()
+\end{verbatim}
+
+However, unlike other unsupervised learning algorithms (e.g., K-means)
+that explicitly partition observations into distinct groups, FIM
+produces a set of co-occuring items without inherent cluster labels.
+Additionally, in FIM the items (columns) are of interest, while in other
+unsupervised learning algorithms the observations (rows) are of
+interest. The following implementation introduces a clustering
+assignment strategy that assigns items to clusters based on itemset
+membership and support values:
+
+For each items in the dataset:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Relevant Itemset Identification: Finds all itemsets containing the
+  item.
+\item
+  Best Itemset Selection: Prioritizes itemsets by:
+
+  \begin{itemize}
+  \item
+    Size: Larger itemsets over smaller ones (encouraging broader
+    clusters).
+  \item
+    Support: Higher-support itemsets break ties (favoring more frequent
+    patterns).
+  \end{itemize}
+\item
+  Cluster Propagation: Assigns all items in the selected itemsets to the
+  same cluster.
+\end{enumerate}
+
+If an item has already been assigned a Cluster, then the best itemset is
+compared to the best itemset used for this Cluster assignment. The same
+itemset prioritization is applied, and if the new best itemset is
+superior then all relevant items are assigned to a new Cluster.
+
+Items that appear in no frequent itemsets are labeled as outliers
+(Cluster\_0\_X) while items within frequent itemsets are assigned
+sequential cluster IDs (Cluster\_1, Cluster\_2, etc.).
+
+Cheng et al. \citeyearpar{cheng_discriminative_2007} analyzes the
+relationship between pattern frequency and discriminative power,
+demonstrating that frequent patterns with higher support and larger
+sizes exhibit greater predictive utility in classification tasks. These
+findings are used as the reasoning for prioritizing larger itemsets with
+higher supports.
+
+\subsection{Prediction Methods}\label{prediction-methods}
+
+Similar to the fit{[}FORMAT{]} method, while the syntax for predicting
+using a fitted freq\_itemsets{[}FORMAT{]} model is the same, the input
+and methodology of the predict function differs from other
+\pkg{tidyclust} models:
+
+\begin{verbatim}
+R> fi_pred <- fi_fit %>%
++  predict(new_data = new_groceries)
+\end{verbatim}
+
+When deciding what it means to predict using frequent itemsets, my goal
+was to create a method that has practical use in a real world setting.
+This lead to implementing a recommendation system, where the new data
+will have partial information about a transaction and predicts which
+other items are likely to be in the transaction. For example, suppose a
+customer in a grocery store items \texttt{A} and \texttt{B} in their
+cart. This system would predict which other items they are likely to add
+based on historical purchasing patterns where \texttt{A} and \texttt{B}
+appeared together.
+
+The implementation of the recommendation system was inspired by
+traditional association rule mining such as CARs
+\citep{liu_integrating_1998} and usage-based recommendations
+\citep{mobasher_effective_2001}. The method predicts item-level
+probabilities using the confidence from frequent itemsets, retains
+interpretability from a rule-based reasoning approach, and handles
+sparse data through a global support fallback. Specifically, for each
+transaction in the new data:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Missing Item Identification: Finds all missing items in the
+  transaction.
+\end{enumerate}
+
+For each missing item:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Relevant Itemset Identification: Finds all itemsets containing the
+  item.
+\item
+  Context Filtering: Retain itemsets that include at least one observed
+  item from the transaction.
+\item
+  Confidence Aggregation: For each retained itemset, compute the
+  confidence of the association where
+\end{enumerate}
+
+\[
+\text{confidence} = \frac{\text{support(itemset)}}{\text{support(observed items in itemset)}}
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\item
+  Prediction Generation: Average the confidences across all retained
+  itemsets.
+\item
+  Fallback Handling: If there are no relevant or retained itemsets, use
+  the items global support (frequency in training data) as the
+  prediction. If the item does not appear in any frequent itemsets, then
+  this global support will be 0.
+\end{enumerate}
+
+Aside from the \texttt{new\_data} argument, predict{[}FORMAT{]} has the
+optional \texttt{type} argument which takes either
+\texttt{\textquotesingle{}raw\textquotesingle{}} or
+\texttt{\textquotesingle{}cluster\textquotesingle{}}. The
+\texttt{\textquotesingle{}raw\textquotesingle{}} option returns the raw
+prediction probabilities, while the default option
+\texttt{\textquotesingle{}cluster\textquotesingle{}} applies a threshold
+(0.5) to convert probabilities to binary predictions. Both options
+return the predictions as a \texttt{tibble} with the sole column
+\texttt{.pred\_cluster}.
+
+While this \texttt{tibble} format is standardized across \pkg{tidyclust}
+predict outputs, it does not provide the information necessary for FIM
+predict output since FIM prediction on the items (columns) and not the
+observations (rows). To keep this standardized formatting while
+providing the necessary information, each row of the output
+\texttt{tibble} represents a transaction from the new data and holds a
+dataframe rather than a string or integer. This dataframe has three
+columns: \texttt{item}, \texttt{.obs\_item}, and \texttt{.pred\_item}.
+The \texttt{item} column represents each item (column) from the
+transaction, and \texttt{.obs\_item} is \texttt{1} or \texttt{0} for any
+observed items and \texttt{NA} for any missing items. The
+\texttt{.pred\_item} column is the opposite of the \texttt{.obs\_item}
+column, where any observed items are \texttt{NA} and any missing items
+are either the raw or binary predicted values. This structure allows the
+user to easily identify what values are observed or predicted in each
+transaction while still containing all the information necessary to
+recreate the original transaction dataset. To assist the user with
+reconstruction, the function extract\_predictions{[}FORMAT{]} takes the
+\texttt{tibble} output and reformats it to a single data frame.
+
+\begin{verbatim}
+R> fi_pred %>%
++  extract_predictions
+\end{verbatim}
+
+\subsection{Metrics}\label{metrics}
+
+While the quality of frequent itemsets is traditionally assessed by
+support values, support alone does not guarantee predictive performance.
+Since the predict methodology follows that of a recommendation system,
+the results should be evaluated using the same metrics. Common metrics
+such as root mean squared error (RMSE), accuracy, precision, and recall
+are implemented in the \pkg{yardstick} package
+\citep{kuhn_yardstick_2024}. The inputs are a list of predicted values
+and a list of the true values, and the function
+augment\_itemset\_predict{[}FORMAT{]} in \pkg{tidyclust} formats the
+predict output as such.
+
+\begin{verbatim}
+R> fi_fit %>%
++  predict(new_data = new_groceries, type = 'raw') %>%
++  augment_itemset_predict(pred_output, truth) %>%
++  rmse(truth, preds)
+R> 
+R> fi_fit %>%
++  predict(new_data = new_groceries, type = 'cluster') %>%
++  augment_itemset_predict(pred_output, truth) %>%
++  mutate(
++    truth = factor(truth, levels = c(0, 1)), 
++    preds = factor(preds, levels = c(0, 1))
++    ) %>%
++  precision(truth, preds)
+\end{verbatim}
+
+When using RMSE, the \texttt{raw} predict output should be used, while
+accuracy, precision, and recall will use the \texttt{cluster} output or
+user thresholded \texttt{raw} output. Caution should be used when
+looking at accuracy, precision, and recall since they can be misleading
+for imbalanced datasets (where items are rarely purchased). In such
+cases, I recommend using F1-Score as a balance between precision and
+recall and looking at precision-recall curves
+\citep{saito_precision-recall_2015} to determine the best threshold
+value.
+
+\begin{verbatim}
+R> fi_fit %>%
++  predict(new_data = new_groceries, type = 'raw') %>%
++  augment_itemset_predict(pred_output, truth) %>%
++  mutate(truth = factor(truth, levels = c(0, 1))) %>%
++  pr_curve(truth, preds) %>%
++  autoplot()
+\end{verbatim}
+
+\subsection{Hyperparameter Tuning}\label{hyperparameter-tuning}
+
+The sole parameter capable of being tuned in a FIM model is
+\texttt{min\_support}. As noted in the Model Specification section,
+there is no default \texttt{min\_support} value since this value varies
+depending on the characteristics of the dataset. Therefore, selecting
+the correct value is imperative for finding useful frequent itemsets.
+The default grid for \texttt{min\_support} is from 0.1 to 0.5. The lower
+bound of 0.1 was chosen to avoid reporting too many frequent itemsets,
+even for smaller datasets, while the upper bound of 0.5 was selected
+since it ensures that at each frequent itemset has a support of at least
+50\%. If this range does not work, then the user can explore their
+dataset and create their own custom range of values.
+
+\begin{verbatim}
+R> min_support_grid <- grid_regular(
++  min_support(), 
++  levels = 10
++  )
+\end{verbatim}
+
+Usually the above object is paired with tune\_cluster{[}FORMAT{]},
+however cross-validation is not currently implemented for FIM and will
+be further discussed in Limitations and Future Directions.
+
+\section{Limitations and Future Directions}\label{sec-limits}
+
+While this implementation successfully integrates frequent itemset
+mining into the \pkg{tidyclust} framework, there are several
+limitations. This section discusses these constraints and proposes
+potential enhancements to improve the methodology.
+
+\subsection{Cluster Assignment
+Methodology}\label{cluster-assignment-methodology-1}
+
+The current clustering method prioritizes itemsets based on size and
+support, assigning items to clusters by identifying the largest and most
+frequent patterns. However, relying on size and support alone may not
+always align with domain-specific objectives. For example, smaller but
+more distinct itemsets may be more informative in applications like
+fraud detection or medical diagnosis. Therefore, alternative metrics for
+selecting the ``best'' itemset could improve cluster quality in these
+situation.
+
+\subsection{Prediction Methodology}\label{prediction-methodology}
+
+The prediction implementation currently averages confidence scores
+across all matching itemsets to determine. Additional methods may
+improve predictive performance, such as using the maximum confidence
+\citep{mobasher_effective_2001} or a weighted average by itemset size or
+support. These methods could be added as an optional parameter for the
+user in the predict function:
+
+\begin{verbatim}
+predict(
+  fi_fit,
+  new_data = new_groceries,
+  confidence_agg = "max"
+)
+\end{verbatim}
+
+Furthermore, these methods do not incorporate the cluster assignments
+created when fitting the model. By weighting confidences higher for
+itemsets where multiple observed items share cluster membership with the
+predicted item, the predictive performance could be improved.
+
+\subsection{Hyperparameter Tuning}\label{hyperparameter-tuning-1}
+
+The current implementation requires manual specification of
+\texttt{min\_support} ranges for tuning. This presents challenges for
+users unfamiliar with their datasets characteristics or new to frequent
+itemset mining. The \pkg{tune} package used in \pkg{tidyclust} relies on
+the \pkg{dials} package \citep{kuhn_dials_2024}, which offers finalize
+functions. These functions take the dataset as a parameter and modify
+the unknown parts of ranges based on the dataset. Building on Dahbi et
+al.'s \citeyearpar{dahbi_finding_2021} statistically-grounded approach,
+I propose a two-step approach:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Calculate the mean support of all 1-itemsets:
+\end{enumerate}
+
+\[
+\mu = \frac{1}{n}\sum^n_{i=1}{\text{support}(\{\text{item}_i\})}
+\]
+
+The median or mode could also be used here.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Create a confidence-interval-like range around \(\mu\) using the
+  standard deviation \(\sigma\):
+\end{enumerate}
+
+\[
+[\mu - \frac{\sigma}{2}, \mu + \sigma]
+\]
+
+clipping the bounds at \([0, 1]\) to ensure valid support values. An
+asymmetric range was selected since transactional datasets tend to have
+a right skewed support distribution.
+
+\subsection{Evaluation Metrics}\label{evaluation-metrics}
+
+While the current implementation works with standard metrics through
+augment\_itemset\_predict{[}FORMAT{]}, specialized metrics could provide
+better insight into prediction performance. The functions output
+preserves both transaction-level and item-level identifiers, allowing
+for two different types of analysis:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Item-level metrics: measures how accurately specific items are
+  predicted across all transactions.
+\item
+  Transaction-level metrics: evaluates complete basket prediction
+  quality.
+\end{enumerate}
+
+These metrics could be used to detect consistently poor predictions for
+niche items and pinpoint whether errors are from specific items or
+transaction patterns.
+
+\subsection{Cross-Validation}\label{cross-validation}
+
+The primary objective of cross-validation in frequent itemset mining is
+to determine the optimal \texttt{min\_support} threshold that maximizes
+the model's predictive performance while maintaining generalizability.
+However, traditional k-fold CV randomly splits transactions, which would
+potentially break item co-occurrence patterns essential for FIM.
+Standard k-fold CV randomly partitions the dataset into k subsets
+(folds), using k-1 folds for training and the remaining fold for
+validation. This procedure assumes independence between training and
+validation data, but in FIM this breaks down for two reasons:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Pattern Fragmentation: Randomly splitting transactions may divide
+  itemset occurrences across multiple folds, artificially reducing their
+  observed support leading to underestimation of their importance..
+\item
+  Dependence Violation: Since frequent itemsets are derived from the
+  entire dataset, any validation set inherently contains information
+  from the training folds through shared itemsets. This violates the
+  independence assumption fundamental to CV's statistical validity.
+\end{enumerate}
+
+To address these issues, I propose item-stratified CV. This approach
+constructs folds that preserve the overall frequency distribution of
+items, ensuring that each fold is representative in terms of both item
+frequencies and co-occurrence patterns. By stratifying on items rather
+than transactions, we maintain the structural integrity of the itemsets
+and prevent support distortion across folds. For datasets with temporal
+components, such as purchases over time, using earlier time periods for
+training and later periods for validation would reflect real-world
+deployment. In both approaches, prediction is evaluated by masking a
+random subset (e.g., 20\%--30\%) of items within each transaction in the
+validation set. The model then predicts the masked items based on the
+observed partial basket.
+
+\section*{Computational details}\label{computational-details}
+\addcontentsline{toc}{section}{Computational details}
+
+The results in this paper were obtained using
+\proglang{R}\textasciitilde4.4.1 with the
+\pkg{tidyclust}\textasciitilde0.2.3.9000 package. \proglang{R} itself
+and all packages used are available from the Comprehensive \proglang{R}
+Archive Network (CRAN) at {[}https://CRAN.R-project.org/{]}.
+
+\section*{Acknowledgments}\label{acknowledgments}
+\addcontentsline{toc}{section}{Acknowledgments}
+
+Dr.~Bodwin
+
+\section*{References}\label{references}
+\addcontentsline{toc}{section}{References}
+
+\renewcommand{\bibsection}{}
+\bibliography{freq_itemsets_citations.bib}
+
+
+
+
+
+\end{document}

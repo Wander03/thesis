@@ -1,0 +1,275 @@
+---
+title: "tidyclust: Implementation of Frequent Itemset Mining [WIP]"
+format:
+    jss-pdf:
+        keep-tex: true
+    jss-html: default
+author:
+  - name: Andrew Kerr
+    affiliations:
+      - name: California Polytechnic State University
+        department: Department of Statistics
+        address: 959 Higuera St.
+        city: San Luis Obispo
+        country: United States of America
+        postal-code: 93401
+      - Journal of Statistical Software
+    orcid: 0000-0003-0918-3766
+    email: adkerr2001@gmail.com
+    url: https://github.com/Wander03/tidyclust
+abstract: |
+  WIP
+
+keywords: [JSS, style guide, comma-separated, not capitalized, R]
+keywords-formatted: [JSS, style guide, comma-separated, not capitalized, "[R]{.proglang}"]
+
+bibliography: freq_itemsets_citations.bib  
+
+eval: false
+---
+
+## Introduction {#sec-intro}
+
+Since the early 1990s, frequent itemset mining (FIM) has been an important area of research in data mining. The work of Agrawal, Imieliński, and Swami [-@agrawal_mining_1993] introduced the Apriori algorithm, which established the foundation for identifying co-occurring items in transactional datasets. Shortly after, algorithms such as FP-growth’s FP-tree structure [@han_mining_2000] and Elcat’s vertical tid-list approach [@zaki_scalable_2000] significantly improved the performance and scalability of FIM techniques. These techniques have since been applied to a wide range of applications, including market basket analysis, web personalization [@mobasher_effective_2001], and associative classification [@liu_integrating_1998].
+
+Although FIM has become more efficient, practical implementations remain confined to specialized software packages. The [R]{.proglang} [@r_core_team_r_2024] programming environment offers itemset mining through [arules]{.pkg} [@hahsler_arules_2011], while [Python]{.proglang} users rely on [mlxtend]{.pkg} [@raschka_mlxtend_2018] for similar functionality. However, these implementations share the same limitation: they operate as stand alone itemset mining applications rather than as integrated components in a modern data science workflow. The absence of native integration with frameworks like [tidymodels]{.pkg} [@kuhn_tidymodels_2020] or [scikit-learn]{.pkg} [@buitinck_api_2013] leaves a gap, forcing analysts to create their own custom solutions.
+
+Another limitation lies in the interpretation of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
+
+This thesis seeks to address these limitations by introducing FIM to [tidyclust]{.pkg} [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the [tidymodel]{.pkg} framework. By adapting the Apriori and Eclat algorithms to [tidyclust]{.pkg}, this work allows itemset mining to be used within unsupervised workflows. It also creates a standard methodology for predicting missing-items, and lays a foundation for future additions of mining and clustering techniques within [tidyclust]{.pkg}.
+
+## Models and software {#sec-models}
+
+### Frequent Itemset Mining
+
+Frequent itemset mining (FIM) methods were developed to identify the elements of a transactional dataset that often occur together. The original use is in market basket research [@agrawal_mining_1993], where FIM techniques help discover items commonly bought together. For example, a pattern could be that milk and eggs are frequently bought together in the same transaction. This type of information can be used by the shop owner to place these items apart from each other, causing customers to walk through more of the store. Although this task may appear simple, the number of itemsets rapidly grows in wider datasets, resulting in the development of more efficient algorithms. One such development is the principle that if an itemset is frequent, then so are all of its subsets; a property known as the Apriori principle or downward closure property. This principle significantly reduces the search space by systematically pruning candidate itemsets that do not meet a minimum support threshold. The two methods implemented in [tidyclust]{.pkg}, Apriori [@agrawal_mining_1993] and Eclat [@zaki_scalable_2000], both operate on this principle.
+
+### tidyclust
+
+The [tidyclust]{.pkg} package [@hvitfeldt_tidyclust_2022] extends the [tidymodels]{.pkg} [@kuhn_tidymodels_2020] framework to unsupervised tasks. These packages were built following the principles of the [tidyverse]{.pkg} [@wickham_welcome_2019], with the goal of establishing a consistent and reproducible workflow. Since the design of [tidyclust]{.pkg} is closely modeled off of [parsnip]{.pkg} [@kuhn_parsnip_2024], users are able to specify an unsupervised learning model, then fit and predict on the model using a standardized syntax.
+
+## FIM in tidyclust {#sec-implementation}
+
+### Model Specification
+
+The model specification for frequent itemset mining follows the same structure as other models in [tidyclust]{.pkg}:
+
+```{r}
+#| prompt: true
+ fi_spec <- freq_itemsets(
+   min_support = 0.05, 
+   mining_method = "eclat"
+   ) %>%
+   set_engine("arules")
+```
+
+The only implemented engine is [arules]{.pkg}. There are two arguments: `min_support` is the user specified minimum support value for an itemset, taking a value between 0 and 1, and `mining_method` is an optional argument specifying the algorithm to use (`apriori` or `eclat`), the default being `eclat`. Eclat was selected as the default algorithm since it is faster in most practical cases [@singla_comprehensive_2023]. A default value for `min_support` is not supplied since this value greatly varies depending on the characteristics of the data.
+
+Recipes and workflows are not impacted by any additions that I have made to [tidyclust]{.pkg}. These tools are the same and work with freq_itemsets[FORMAT] without error.
+
+### Cluster Assignment Methodology
+
+While fitting a freq_itemsets[FORMAT] model is the same, multiple decisions had to be made to create the desired output:
+
+```{r}
+#| prompt: true
+fi_fit <- fi_spec %>%
+  fit(~ .,
+    data = groceries
+  )
+```
+
+A strength of the [tidyclust]{.pkg} framework is that the output of each function is standardized, formatted the same way. The main product of a fitted model are the cluster assignments, which are stored in a `tibble` with the sole column `.cluster`.
+
+```{r}
+#| prompt: true
+fi_fit %>% 
+  extract_cluster_assignment()
+```
+
+However, unlike other unsupervised learning algorithms (e.g., K-means) that explicitly partition observations into distinct groups, FIM produces a set of co-occuring items without inherent cluster labels. Additionally, in FIM the items (columns) are of interest, while in other unsupervised learning algorithms the observations (rows) are of interest. The following implementation introduces a clustering assignment strategy that assigns items to clusters based on itemset membership and support values:
+
+For each items in the dataset:
+
+1. Relevant Itemset Identification: Finds all itemsets containing the item.
+
+2. Best Itemset Selection: Prioritizes itemsets by:
+
+    + Size: Larger itemsets over smaller ones (encouraging broader clusters).
+
+    + Support: Higher-support itemsets break ties (favoring more frequent patterns).
+
+3. Cluster Propagation: Assigns all items in the selected itemsets to the same cluster. 
+
+If an item has already been assigned a Cluster, then the best itemset is compared to the best itemset used for this Cluster assignment. The same itemset prioritization is applied, and if the new best itemset is superior then all relevant items are assigned to a new Cluster.
+
+Items that appear in no frequent itemsets are labeled as outliers (Cluster_0_X) while items within frequent itemsets are assigned sequential cluster IDs (Cluster_1, Cluster_2, etc.).
+
+Cheng et al. [-@cheng_discriminative_2007] analyzes the relationship between pattern frequency and discriminative power, demonstrating that frequent patterns with higher support and larger sizes exhibit greater predictive utility in classification tasks. These findings are used as the reasoning for prioritizing larger itemsets with higher supports. 
+
+### Prediction Methods
+
+Similar to the fit[FORMAT] method, while the syntax for predicting using a fitted freq_itemsets[FORMAT] model is the same, the input and methodology of the predict function differs from other [tidyclust]{.pkg} models:
+
+```{r}
+#| prompt: true
+fi_pred <- fi_fit %>%
+  predict(new_data = new_groceries)
+```
+
+When deciding what it means to predict using frequent itemsets, my goal was to create a method that has practical use in a real world setting. This lead to implementing a recommendation system, where the new data will have partial information about a transaction and predicts which other items are likely to be in the transaction. For example, suppose a customer in a grocery store items `A` and `B` in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where `A` and `B` appeared together.
+
+The implementation of the recommendation system was inspired by traditional association rule mining such as CARs [@liu_integrating_1998] and usage-based recommendations [@mobasher_effective_2001]. The method predicts item-level probabilities using the confidence from frequent itemsets, retains interpretability from a rule-based reasoning approach, and handles sparse data through a global support fallback. Specifically, for each transaction in the new data:
+
+1. Missing Item Identification: Finds all missing items in the transaction.
+
+For each missing item:
+
+1. Relevant Itemset Identification: Finds all itemsets containing the item.
+
+2. Context Filtering: Retain itemsets that include at least one observed item from the transaction.
+
+3. Confidence Aggregation: For each retained itemset, compute the confidence of the association where
+
+$$
+\text{confidence} = \frac{\text{support(itemset)}}{\text{support(observed items in itemset)}}
+$$
+
+4. Prediction Generation: Average the confidences across all retained itemsets.
+
+5. Fallback Handling: If there are no relevant or retained itemsets, use the items global support (frequency in training data) as the prediction. If the item does not appear in any frequent itemsets, then this global support will be 0.
+
+Aside from the `new_data` argument, predict[FORMAT] has the optional `type` argument which takes either `'raw'` or `'cluster'`. The `'raw'` option returns the raw prediction probabilities, while the default option `'cluster'` applies a threshold (0.5) to convert probabilities to binary predictions. Both options return the predictions as a `tibble` with the sole column `.pred_cluster`. 
+
+While this `tibble` format is standardized across [tidyclust]{.pkg} predict outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `item` column represents each item (column) from the transaction, and `.obs_item` is `1` or `0` for any observed items and `NA` for any missing items. The `.pred_item` column is the opposite of the `.obs_item` column, where any observed items are `NA` and any missing items are either the raw or binary predicted values. This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function extract_predictions[FORMAT] takes the `tibble` output and reformats it to a single data frame.
+
+```{r}
+#| prompt: true
+fi_pred %>%
+  extract_predictions
+```
+
+### Metrics
+
+While the quality of frequent itemsets is traditionally assessed by support values, support alone does not guarantee predictive performance. Since the predict methodology follows that of a recommendation system, the results should be evaluated using the same metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the [yardstick]{.pkg} package [@kuhn_yardstick_2024]. The inputs are a list of predicted values and a list of the true values, and the function augment_itemset_predict[FORMAT] in [tidyclust]{.pkg} formats the predict output as such.
+
+```{r}
+#| prompt: true
+fi_fit %>%
+  predict(new_data = new_groceries, type = 'raw') %>%
+  augment_itemset_predict(pred_output, truth) %>%
+  rmse(truth, preds)
+
+fi_fit %>%
+  predict(new_data = new_groceries, type = 'cluster') %>%
+  augment_itemset_predict(pred_output, truth) %>%
+  mutate(
+    truth = factor(truth, levels = c(0, 1)), 
+    preds = factor(preds, levels = c(0, 1))
+    ) %>%
+  precision(truth, preds)
+```
+
+When using RMSE, the `raw` predict output should be used, while accuracy, precision, and recall will use the `cluster` output or user thresholded `raw` output. Caution should be used when looking at accuracy, precision, and recall since they can be misleading for imbalanced datasets (where items are rarely purchased). In such cases, I recommend using F1-Score as a balance between precision and recall and looking at precision-recall curves [@saito_precision-recall_2015] to determine the best threshold value.
+
+```{r}
+#| prompt: true
+fi_fit %>%
+  predict(new_data = new_groceries, type = 'raw') %>%
+  augment_itemset_predict(pred_output, truth) %>%
+  mutate(truth = factor(truth, levels = c(0, 1))) %>%
+  pr_curve(truth, preds) %>%
+  autoplot()
+```
+
+### Hyperparameter Tuning
+
+The sole parameter capable of being tuned in a FIM model is `min_support`. As noted in the Model Specification section, there is no default `min_support` value since this value varies depending on the characteristics of the dataset. Therefore, selecting the correct value is imperative for finding useful frequent itemsets. The default grid for `min_support` is from 0.1 to 0.5. The lower bound of 0.1 was chosen to avoid reporting too many frequent itemsets, even for smaller datasets, while the upper bound of 0.5 was selected since it ensures that at each frequent itemset has a support of at least 50%. If this range does not work, then the user can explore their dataset and create their own custom range of values. 
+
+```{r}
+#| prompt: true
+min_support_grid <- grid_regular(
+  min_support(), 
+  levels = 10
+  )
+```
+
+Usually the above object is paired with tune_cluster[FORMAT], however cross-validation is not currently implemented for FIM and will be further discussed in Limitations and Future Directions.
+
+## Limitations and Future Directions {#sec-limits}
+
+While this implementation successfully integrates frequent itemset mining into the [tidyclust]{.pkg} framework, there are several limitations. This section discusses these constraints and proposes potential enhancements to improve the methodology.
+
+### Cluster Assignment Methodology
+
+The current clustering method prioritizes itemsets based on size and support, assigning items to clusters by identifying the largest and most frequent patterns. However, relying on size and support alone may not always align with domain-specific objectives. For example, smaller but more distinct itemsets may be more informative in applications like fraud detection or medical diagnosis. Therefore, alternative metrics for selecting the "best" itemset could improve cluster quality in these situation.
+
+### Prediction Methodology
+
+The prediction implementation currently averages confidence scores across all matching itemsets to determine. Additional methods may improve predictive performance, such as using the maximum confidence [@mobasher_effective_2001] or a weighted average by itemset size or support. These methods could be added as an optional parameter for the user in the predict function: 
+
+```{r}
+predict(
+  fi_fit,
+  new_data = new_groceries,
+  confidence_agg = "max"
+)
+```
+
+Furthermore, these methods do not incorporate the cluster assignments created when fitting the model. By weighting confidences higher for itemsets where multiple observed items share cluster membership with the predicted item, the predictive performance could be improved.
+
+### Hyperparameter Tuning
+
+The current implementation requires manual specification of `min_support` ranges for tuning. This presents challenges for users unfamiliar with their datasets characteristics or new to frequent itemset mining. The [tune]{.pkg} package used in [tidyclust]{.pkg} relies on the [dials]{.pkg} package [@kuhn_dials_2024], which offers finalize functions. These functions take the dataset as a parameter and modify the unknown parts of ranges based on the dataset. Building on Dahbi et al.'s [-@dahbi_finding_2021] statistically-grounded approach, I propose a two-step approach:
+
+1. Calculate the mean support of all 1-itemsets:
+
+$$
+\mu = \frac{1}{n}\sum^n_{i=1}{\text{support}(\{\text{item}_i\})}
+$$
+
+The median or mode could also be used here.
+
+2. Create a confidence-interval-like range around $\mu$ using the standard deviation $\sigma$:
+
+$$
+[\mu - \frac{\sigma}{2}, \mu + \sigma]
+$$
+
+clipping the bounds at $[0, 1]$ to ensure valid support values. An asymmetric range was selected since transactional datasets tend to have a right skewed support distribution.
+
+### Evaluation Metrics
+
+While the current implementation works with standard metrics through augment_itemset_predict[FORMAT], specialized metrics could provide better insight into prediction performance. The functions output preserves both transaction-level and item-level identifiers, allowing for two different types of analysis:
+
+1. Item-level metrics: measures how accurately specific items are predicted across all transactions.
+
+2. Transaction-level metrics: evaluates complete basket prediction quality.
+
+These metrics could be used to detect consistently poor predictions for niche items and pinpoint whether errors are from specific items or transaction patterns.
+
+### Cross-Validation
+
+The primary objective of cross-validation in frequent itemset mining is to determine the optimal `min_support` threshold that maximizes the model's predictive performance while maintaining generalizability. However, traditional k-fold CV randomly splits transactions, which would potentially break item co-occurrence patterns essential for FIM. Standard k-fold CV randomly partitions the dataset into k subsets (folds), using k-1 folds for training and the remaining fold for validation. This procedure assumes independence between training and validation data, but in FIM this breaks down for two reasons:
+
+1. Pattern Fragmentation: Randomly splitting transactions may divide itemset occurrences across multiple folds, artificially reducing their observed support leading to underestimation of their importance.. 
+
+2. Dependence Violation: Since frequent itemsets are derived from the entire dataset, any validation set inherently contains information from the training folds through shared itemsets. This violates the independence assumption fundamental to CV's statistical validity.
+
+To address these issues, I propose item-stratified CV. This approach constructs folds that preserve the overall frequency distribution of items, ensuring that each fold is representative in terms of both item frequencies and co-occurrence patterns. By stratifying on items rather than transactions, we maintain the structural integrity of the itemsets and prevent support distortion across folds. For datasets with temporal components, such as purchases over time, using earlier time periods for training and later periods for validation would reflect real-world deployment. In both approaches, prediction is evaluated by masking a random subset (e.g., 20%–30%) of items within each transaction in the validation set. The model then predicts the masked items based on the observed partial basket. 
+
+## Computational details {.unnumbered}
+
+The results in this paper were obtained using [R]{.proglang}~4.4.1 with the
+[tidyclust]{.pkg}~0.2.3.9000 package. [R]{.proglang} itself and all packages used are available from the Comprehensive [R]{.proglang} Archive Network (CRAN) at
+[https://CRAN.R-project.org/].
+
+## Acknowledgments {.unnumbered}
+
+Dr. Bodwin
+
+## References {.unnumbered}
+
+:::{#refs}
+
+:::
