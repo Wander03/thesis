@@ -110,6 +110,8 @@ Another limitation lies in the interpretation of FIM results. Frequent itemsets 
 
 This thesis seeks to address these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms to `tidyclust`, this work allows itemset mining to be used within unsupervised workflows. It also creates a standard methodology for predicting missing-items, and lays a foundation for future additions of mining and clustering techniques within `tidyclust`.
 
+NOTE: add github
+
 # Background
 
 ## Frequent Itemset Mining: Concepts and Algorithms
