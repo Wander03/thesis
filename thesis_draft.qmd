@@ -387,14 +387,66 @@ min_support_grid <- grid_regular(
   )
 ```
 
-Usually the above object is paired with `tune_cluster` as seen in the previous K-means example, however cross-validation is not currently implemented for FIM.
+Usually the above object is paired with `tune_cluster` as seen in the previous K-means example, however cross-validation is not currently implemented for FIM and will be further discussed in Limitations and Future Directions.
 
-# Limitations
+# Limitations and Future Directions
 
-## Analysis of Implementation Limitations
+While this implementation successfully integrates frequent itemset mining into the `tidyclust` framework, there are several limitations. This section discusses these constraints and proposes potential enhancements to improve the methodology.
 
-## Future Directions
-The `tune` package relies on the `dials` package [@kuhn_dials_2024] 
+## Cluster Assignment Methodology
+
+The current clustering method prioritizes itemsets based on size and support, assigning items to clusters by identifying the largest and most frequent patterns. However, relying on size and support alone may not always align with domain-specific objectives. For example, smaller but more distinct itemsets may be more informative in applications like fraud detection or medical diagnosis. Therefore, alternative metrics for selecting the "best" itemset could improve cluster quality in these situation.
+
+## Prediction Methodology
+
+The prediction implementation currently averages confidence scores across all matching itemsets to determine. Additional methods may improve predictive performance, such as using the maximum confidence [@mobasher_effective_2001] or a weighted average by itemset size or support. These methods could be added as an optional parameter for the user in the predict function: 
+
+```{r}
+predict(
+  fi_fit,
+  new_data = new_groceries,
+  confidence_agg = "max"
+)
+```
+
+Furthermore, these methods do not incorporate the cluster assignments created when fitting the model. By weighting confidences higher for itemsets where multiple observed items share cluster membership with the predicted item, the predictive performance could be improved.
+
+## Hyperparameter Tuning
+
+The current implementation requires manual specification of `min_support` ranges for tuning. This presents challenges for users unfamiliar with their datasets characteristics or new to frequent itemset mining. The `tune` package used in `tidyclust` relies on the `dials` package [@kuhn_dials_2024], which offers finalize functions. These functions take the dataset as a parameter and modify the unknown parts of ranges based on the dataset. Building on Dahbi et al.'s [-@dahbi_finding_2021] statistically-grounded approach, I propose a two-step approach:
+
+1. Calculate the mean support of all 1-itemsets:
+$$
+\mu = \frac{1}{n}\sum^n_{i=1}{\text{support}(\{\text{item}_i\})}
+$$
+The median or mode could also be used here.
+
+2. Create a confidence-interval-like range around $\mu$ using the standard deviation $\sigma$:
+$$
+[\mu - \frac{\sigma}{2}, \mu + \sigma]
+$$
+clipping the bounds at $[0, 1]$ to ensure valid support values. An asymmetric range was selected since transactional datasets tend to have a right skewed support distribution.
+
+## Evaluation Metrics
+
+While the current implementation works with standard metrics through `augment_itemset_predict()`, specialized metrics could provide better insight into prediction performance. The functions output preserves both transaction-level and item-level identifiers, allowing for two different types of analysis:
+
+1. Item-level metrics: measures how accurately specific items are predicted across all transactions.
+
+2. Transaction-level metrics: evaluates complete basket prediction quality.
+
+These metrics could be used to detect consistently poor predictions for niche items and pinpoint whether errors are from specific items or transaction patterns.
+
+## Cross-Validation
+
+The primary objective of cross-validation in frequent itemset mining is to determine the optimal `min_support` threshold that maximizes the model's predictive performance while maintaining generalizability. However, traditional k-fold CV randomly splits transactions, which would potentially break item co-occurrence patterns essential for FIM. Standard k-fold CV randomly partitions the dataset into k subsets (folds), using k-1 folds for training and the remaining fold for validation. This procedure assumes independence between training and validation data, but in FIM this breaks down for two reasons:
+
+1. Pattern Fragmentation: Randomly splitting transactions may divide itemset occurrences across multiple folds, artificially reducing their observed support leading to underestimation of their importance.. 
+
+2. Dependence Violation: Since frequent itemsets are derived from the entire dataset, any validation set inherently contains information from the training folds through shared itemsets. This violates the independence assumption fundamental to CV's statistical validity.
+
+To address these issues, I propose item-stratified CV. This approach constructs folds that preserve the overall frequency distribution of items, ensuring that each fold is representative in terms of both item frequencies and co-occurrence patterns. By stratifying on items rather than transactions, we maintain the structural integrity of the itemsets and prevent support distortion across folds. For datasets with temporal components, such as purchases over time, using earlier time periods for training and later periods for validation would reflect real-world deployment. In both approaches, prediction is evaluated by masking a random subset (e.g., 20%–30%) of items within each transaction in the validation set. The model then predicts the masked items based on the observed partial basket. 
+
 # References
 
 ::: {#refs}
