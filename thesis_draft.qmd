@@ -435,7 +435,7 @@ This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `it
 #| eval: true
 fi_pred$.pred_cluster[[1]] %>%
   head(5) %>%
-  kable()
+  kable(align = 'r')
 ```
 
 This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function `extract_predictions` takes the `tibble` output and reformat it to a single data frame.
@@ -446,7 +446,7 @@ This structure allows the user to easily identify what values are observed or pr
 fi_pred %>%
   extract_predictions() %>%
   head(c(5, 6)) %>%
-  kable()
+  kable(align = 'r')
 ```
 
 ## Evaluation Metrics
@@ -485,7 +485,7 @@ fi_fit %>%
 
 ## Hyperparameter Tuning
 
-The sole parameter capable of being tuned in a FIM model is `min_support`. As noted in the Model Specification section, there is no default `min_support` value since this value varies depending on the characteristics of the dataset. Therefore, selecting the correct value is imperative for finding useful frequent itemsets. The default grid for `min_support` is from 0.1 to 0.5. The lower bound of 0.1 was chosen to avoid reporting too many frequent itemsets, even for smaller datasets, while the upper bound of 0.5 was selected since it ensures that at each frequent itemset has a support of at least 50%. If this range does not work, then the user can explore their dataset and create their own custom range of values. 
+The sole parameter capable of being tuned in a FIM model is `min_support`. As noted in the Model Specification section, there is no default `min_support` value since this value varies depending on the characteristics of the dataset. Therefore, selecting the correct value is imperative for finding useful frequent itemsets. The default grid for `min_support` is from 0.1 to 0.5. The lower bound of 0.1 was chosen to avoid reporting too many frequent itemsets, even for smaller datasets, while the upper bound of 0.5 was selected since it ensures that at each frequent itemset has a support of at least 50%.
 
 ```{r}
 #| prompt: true
@@ -498,7 +498,7 @@ min_support_grid <- grid_regular(
 min_support_grid
 ```
 
-Usually the above object is paired with `tune_cluster` as seen in the previous K-means example, however cross-validation is not currently implemented for FIM and will be further discussed in Limitations and Future Directions.
+Usually the above object is paired with `tune_cluster` as seen in the previous K-means example, however cross-validation is not currently implemented for FIM. Suggestions for improved tuning and implementing cross validation will be discussed in sections 4.3 and 4.5.
 
 # Limitations and Future Directions
 
