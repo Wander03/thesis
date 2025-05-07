@@ -95,6 +95,7 @@ library(tidyclust)
 library(arules)
 library(yardstick)
 library(dials)
+library(kableExtra)
 
 data(Groceries)
 groceries <- as.data.frame(as(Groceries, "matrix")) %>%
@@ -433,7 +434,8 @@ This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `it
 #| prompt: true
 #| eval: true
 fi_pred$.pred_cluster[[1]] %>%
-  head(5)
+  head(5) %>%
+  kable()
 ```
 
 This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function `extract_predictions` takes the `tibble` output and reformat it to a single data frame.
@@ -443,7 +445,8 @@ This structure allows the user to easily identify what values are observed or pr
 #| eval: true
 fi_pred %>%
   extract_predictions() %>%
-  head(c(5, 6))
+  head(c(5, 6)) %>%
+  kable()
 ```
 
 ## Evaluation Metrics
