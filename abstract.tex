@@ -1,11 +1,21 @@
 \begin{center}
 ABSTRACT \\
-Thesis Title (Must match Title Page exactly, without ALL CAPS (use Title Case))
+Frequent Itemset Mining with tidyclust in R
 
 Andrew Davis Kerr
 \end{center}
 
-The Abstract may be either single- or double-spaced, and may be longer than one page, if necessary, with committee approval. Also, "keywords" may be added at the end of the abstract.
+Clustering is a core technique in unsupervised learning, allowing for the 
+discovery of patterns in unlabled data. In R, the tidyclust package provides a 
+unified interface for clustering models, yet lacks support for data mining. This 
+thesis addresses this gap by introducing the Apriori and ECLAT algorithms into 
+tidyclust, with a focus on frequent itemset mining. Unlike traditional 
+clustering models, frequent itemsets do not inherently produce cluster lablels. 
+To address this, a novel clustering approach is proposed: items (columns) are 
+grouped based on their "dominat" frequent itemset. A key contribution is a new
+prediction method, modeled as a recommender system, to predict missing items. 
+This implementation extends tidyclust to support column-based clustering, with 
+applications in market basket analysis and recommendation systems.
 
-Keywords: Select descriptive keywords and separate terms with a comma and a space.
+Keywords: Clustering, Data Mining, Apriori, ECLAT, Frequent Itemset, tidyclust, R
 \clearpage
