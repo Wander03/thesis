@@ -116,23 +116,37 @@ Although FIM has become more efficient, practical implementations are often conf
 
 Another limitation lies in the interpretation of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
 
-This thesis addresses these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms, this work allows itemset mining to be used within unsupervised workflows. Furthermore, it establishes a standard methodology for predicting missing items and lays a foundation for integrating future data mining and clustering techniques into `tidyclust`. The source code for my implementation can be found at https://github.com/Wander03/tidyclust.
+This thesis addresses these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms, this work allows itemset mining to be used within unsupervised workflows. Furthermore, it establishes a standard methodology for predicting missing items and lays a foundation for integrating future data mining and clustering techniques into `tidyclust`. The source code for the work in this thesis can be found at https://github.com/Wander03/tidyclust.
 
 # Background
 
 ## Frequent Itemset Mining: Concepts and Algorithms
 
-Frequent itemset mining (FIM) methods were developed to identify the elements within a transactional dataset that often occur together. Initially used in market basket research [@agrawal_mining_1993], FIM techniques help discover items commonly purchased together. For instance, a pattern could be that milk and eggs are frequently bought together in the same transaction. This type of information can be used by the shop owner to place these items apart from each other, causing customers to browse more of the store. Although seemingly simple, the number of itemsets expands rapidly in larger datasets, requiring more efficient algorithms. One key development is the Apriori principle (or downward closure property), which states that if an itemset is frequent, then so are all of its subsets. This principle significantly reduces the search space by systematically pruning candidate itemsets that fall below a minimum support threshold. The two methods implemented in `tidyclust`, Apriori and Eclat, both operate on this principle.
+Frequent itemset mining (FIM) methods were developed to identify the elements within a transactional dataset that often occur together. Initially used in market basket research [@agrawal_mining_1993], FIM techniques help discover items commonly purchased together. 
+
+```{r}
+#| eval: true
+#| echo: false
+set.seed(29)
+data.frame(
+  'milk' = sample(c(0, 1), 7, replace = T),
+  'eggs' = sample(c(0, 1), 7, replace = T),
+  'beer' = sample(c(0, 1), 7, replace = T),
+  'diapers' = sample(c(0, 1), 7, replace = T)
+) %>% kable(align = 'r')
+```
+
+For instance, a pattern could be that milk and eggs are frequently bought together in the same transaction. This type of information can be used by the shop owner to place these items apart from each other, causing customers to browse more of the store. Although seemingly simple, the number of itemsets expands rapidly in larger datasets, requiring more efficient algorithms. One key development is the Apriori principle (or downward closure property), which states that if an itemset is frequent, then so are all of its subsets. This principle significantly reduces the search space by systematically pruning candidate itemsets that fall below a minimum support threshold. The `tidyclust` extensions in this thesis use Apriori and Eclat, which both operate on this principle.
 
 ### Definitions
 
-Some key terms used in frequent itemset mining have already been mentioned. This section further defines and formalizes key terms used in frequent itemset mining.
+This section further defines and formalizes key terms used in frequent itemset mining.
 
 Let $I = \{i_1, i_2, \dots, i_m\}$ be a set of items and $D = \{t_1, t_2, \dots, t_n\}$ a transactional dataset where each transaction $t_j \subseteq I$. A non-empty subset $X = \{i_1, i_2, ..., i_k\} \subseteq I$ is an itemset, or k-itemset where $k$ is the number of items.
 
 The support of an itemset $X$ is the proportion of transactions containing $X$:
 
-$$\text{support}(X) = \frac{|{t \in D \mid X ⊆ t}|}{|D|}$$
+$$\text{support}(X) = \frac{|{t \in D : X ⊆ t}|}{|D|}$$
 
 An itemset is considered frequent if its support is greater than or equal to a given minimum support threshold $\sigma$, where $0 \leq \sigma \leq 1$. The goal of FIM is to find the set of frequent itemsets corresponding to the users minimum support.
 
@@ -143,7 +157,7 @@ The Apriori algorithm [@agrawal_mining_1993] implements a breadth-first search t
 1.  Initialization ($k = 1$): Scan the transactional dataset $D$ to compute the support of all 1-itemsets $X$. Keep only those with support($X$) $\geq \sigma$, forming the set of frequent 1-itemsets $L_1$.
 
 2.  Candidate Generation ($k > 1$): Generate candidate k-itemsets $C_k$ by joining pairs of frequent ($k$ - 1)-itemsets from $L_{k-1}$ that share the first $k$ - 2 items:
-$$C_k = \{X \cup Y \mid X, Y \in L_{k - 1}, |X \cap Y| = k - 2\}$$
+$$C_k = \{X \cup Y : X, Y \in L_{k - 1}, |X \cap Y| = k - 2\}$$
 
 3.  Pruning: Eliminate any candidate $X \in C_k$ where ($k$ - 1)-subset of $X$ is not in $L_{k - 1}$ (downward closure property)
 
@@ -396,9 +410,9 @@ fi_pred <- fi_fit %>%
   predict(new_data = new_groceries)
 ```
 
-When determining how to predict using frequent itemsets, the goal was to develop a method with practical use in real-world applications. This led to the implemention of a recommendation system, where the new data contains partial information about a transaction, and the model predicts other items that are likely to be in the transaction. For example, suppose a customer in a grocery store items `A` and `B` in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where `A` and `B` appeared together.
+When determining how to predict using frequent itemsets, the goal was to develop a method with practical use in real-world applications. This led to the implemention of a recommender system, where the new data contains partial information about a transaction, and the model predicts other items that are likely to be in the transaction. For example, suppose a customer in a grocery store items `A` and `B` in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where `A` and `B` appeared together.
 
-The recommendation system implementation draws inspiration from traditional association rule mining techniques like CARs [@liu_integrating_1998] and usage-based recommendations [@mobasher_effective_2001]. The method predicts item-level probabilities using the confidence from frequent itemsets, retains interpretability from a rule-based reasoning approach, and handles sparse data through a global support fallback. Specifically, for each transaction in the new data:
+The recommender system implementation draws inspiration from traditional association rule mining techniques like CARs [@liu_integrating_1998] and usage-based recommendations [@mobasher_effective_2001]. The method predicts item-level probabilities using the confidence from frequent itemsets, retains interpretability from a rule-based reasoning approach, and handles sparse data through a global support fallback. Specifically, for each transaction in the new data:
 
 1. Missing Item Identification: Finds all missing items in the transaction.
 
@@ -451,7 +465,7 @@ fi_pred %>%
 
 ## Evaluation Metrics
 
-While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommendation system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. The `augment_itemset_predict()` function in `tidyclust` formats the `predict()` output accordingly.
+While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommender system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. The `augment_itemset_predict()` function in `tidyclust` formats the `predict()` output accordingly.
 
 ```{r}
 #| prompt: true
