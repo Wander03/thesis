@@ -1,0 +1,57 @@
+% --- Package Loading ---
+\usepackage{etoolbox}
+\usepackage{tocloft}
+
+% --- Front Matter Numbering ---
+\pagenumbering{roman}
+
+% --- Main Matter Control ---
+\newcommand{\frontmatter}{}
+\newcommand{\mainmatter}{%
+  \clearpage
+  \pagenumbering{arabic}%
+  \setcounter{page}{1}%
+}
+
+% --- Appendix Formatting ---
+\let\oldappendix\appendix
+\renewcommand{\appendix}{%
+  \clearpage
+  \oldappendix
+  \renewcommand{\thechapter}{\Alph{chapter}}%
+  \addtocontents{toc}{APPENDICES\par}
+  \renewcommand{\cftchapfont}{\normalfont}
+  \renewcommand{\cftchappagefont}{\normalfont}
+  \renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+  \setlength{\cftchapindent}{0pt}
+  \setlength{\cftbeforechapskip}{0pt}
+}
+
+% --- Chapter/Section Formatting ---
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\centering}
+  {\chaptertitlename\ \thechapter}
+  {0pt}
+  {\MakeUppercase}
+\titleformat*{\section}{\normalfont\bfseries}
+\titleformat*{\subsection}{\normalfont\bfseries}
+\titleformat*{\subsubsection}{\normalfont\bfseries}
+
+% --- Line Spacing ---
+\usepackage{setspace}
+\doublespacing
+
+% --- Chapter Page Style ---
+\makeatletter
+\patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{plain}}{}{}
+\makeatother
+
+% --- Custom TOC Formatting for Appendix ---
+\addtocontents{toc}{%
+  \protect\renewcommand{\protect\cftchapfont}{\protect\normalfont}%
+  \protect\renewcommand{\protect\cftchappagefont}{\protect\normalfont}%
+  \protect\renewcommand{\protect\cftchapleader}{\protect\cftdotfill{\protect\cftdotsep}}%
+  \protect\renewcommand{\protect\cftchapindent}{0pt}%
+  \protect\renewcommand{\protect\cftbeforechapskip}{0pt}%
+}

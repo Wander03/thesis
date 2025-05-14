@@ -24,64 +24,7 @@ format:
     bibliography: freq_itemsets_citations.bib
     csl: apa-6th-edition.csl
     include-in-header:
-      text: |
-        % Load the etoolbox package for LaTeX command patching
-        \usepackage{etoolbox}
-        
-        % FRONT MATTER NUMBERING
-        % Set page numbering to roman numerals (i, ii, iii) for front matter
-        % This covers title page, abstract, TOC, etc.
-        \pagenumbering{roman}
-        
-        % MAIN MATTER CONTROL
-        % Define commands to handle transitions between document sections
-        % \frontmatter - dummy command (does nothing, just for semantic structure)
-        \newcommand{\frontmatter}{}
-        
-        % \mainmatter - switches to main content numbering:
-        % 1. \clearpage - ensures transition happens on new page
-        % 2. \pagenumbering{arabic} - switches to 1, 2, 3 numbering
-        % 3. \setcounter{page}{1} - explicitly starts at page 1
-        \newcommand{\mainmatter}{%
-          \clearpage
-          \pagenumbering{arabic}%
-          \setcounter{page}{1}%
-        }
-        
-        % CHAPTER/SECTION FORMATTING
-        % Customize heading styles using titlesec package
-        \usepackage{titlesec}
-        
-        % Chapter title formatting:
-        % [display] - style with separate lines for label and title
-        % {\normalfont\centering} - normal font, centered
-        % {\chaptertitlename\ \thechapter} - shows "Chapter X"
-        % {0pt} - vertical space between label and title (none)
-        % {\MakeUppercase} - makes chapter title uppercase
-        \titleformat{\chapter}[display]
-          {\normalfont\centering}
-          {\chaptertitlename\ \thechapter}
-          {0pt}
-          {\MakeUppercase}
-        
-        % Section/subsection formatting:
-        % * - applies to all levels
-        % \normalfont\bfseries - normal font with bold weight
-        \titleformat*{\section}{\normalfont\bfseries}
-        \titleformat*{\subsection}{\normalfont\bfseries}
-        \titleformat*{\subsubsection}{\normalfont\bfseries}
-        
-        % LINE SPACING
-        % Set document to double spacing
-        \usepackage{setspace}
-        \doublespacing
-        
-        % CHAPTER PAGE STYLE
-        % Ensure chapter pages use 'plain' page style (no headers, just page number)
-        % This uses etoolbox to patch the \chapter command
-        \makeatletter
-        \patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{plain}}{}{}
-        \makeatother
+      file: formating.tex
 eval: false
 ---
 
@@ -96,14 +39,21 @@ library(arules)
 library(yardstick)
 library(dials)
 library(kableExtra)
+library(palmerpenguins)
+library(recipes)
+library(workflows)
+
+
 
 data(Groceries)
-groceries <- as.data.frame(as(Groceries, "matrix")) %>%
+groceries <- as.data.frame(as(Groceries, "matrix")) |>
   mutate(across(everything(), ~.*1))
 set.seed(130)
 na_result <- tidyclust:::random_na_with_truth(groceries[1:5,], na_prob = 0.3)
 new_groceries <- na_result$na_data
 truth <- na_result$truth
+sample_indices <- sample(nrow(penguins), size = floor(0.10 * nrow(penguins)))
+penguins_new <- penguins[sample_indices, ]
 ```
 
 \mainmatter
@@ -114,7 +64,7 @@ Frequent itemset mining (FIM) has been a growing area of research in data mining
 
 Although FIM has become more efficient, practical implementations are often confined to specialized software packages. For example, the R programming environment offers itemset mining through the `arules` package [@hahsler_arules_2011], while Python users rely on `mlxtend` [@raschka_mlxtend_2018]. However, these implementations typically operate as standalone applications, lacking integration within modern data science workflows. This absence of native integration with frameworks like `tidymodels` [@kuhn_tidymodels_2020] or `scikit-learn` [@buitinck_api_2013] creates a need for analysts to develop custom solutions.
 
-Another limitation lies in the interpretation of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
+Another limitation lies in the uses of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
 
 This thesis addresses these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms, this work allows itemset mining to be used within unsupervised workflows. Furthermore, it establishes a standard methodology for predicting missing items and lays a foundation for integrating future data mining and clustering techniques into `tidyclust`. The source code for the work in this thesis can be found at https://github.com/Wander03/tidyclust.
 
@@ -127,16 +77,16 @@ Frequent itemset mining (FIM) methods were developed to identify the elements wi
 ```{r}
 #| eval: true
 #| echo: false
-set.seed(29)
 data.frame(
-  'milk' = sample(c(0, 1), 7, replace = T),
-  'eggs' = sample(c(0, 1), 7, replace = T),
-  'beer' = sample(c(0, 1), 7, replace = T),
-  'diapers' = sample(c(0, 1), 7, replace = T)
-) %>% kable(align = 'r')
+  'milk' = c(1, 0, 1, 1, 1),
+  'eggs' = c(0, 1, 0, 0, 0),
+  'beer' = c(0, 1, 1, 1, 0),
+  'diapers' = c(0, 1, 1, 1, 1),
+  'bread' = c(1, 1, 0, 1, 1)
+) |> kable(align = 'r')
 ```
 
-For instance, a pattern could be that milk and eggs are frequently bought together in the same transaction. This type of information can be used by the shop owner to place these items apart from each other, causing customers to browse more of the store. Although seemingly simple, the number of itemsets expands rapidly in larger datasets, requiring more efficient algorithms. One key development is the Apriori principle (or downward closure property), which states that if an itemset is frequent, then so are all of its subsets. This principle significantly reduces the search space by systematically pruning candidate itemsets that fall below a minimum support threshold. The `tidyclust` extensions in this thesis use Apriori and Eclat, which both operate on this principle.
+For instance, a pattern could be that milk and bread are frequently bought together in the same transaction. This type of information can be used by the shop owner to place these items apart from each other, causing customers to browse more of the store. Although seemingly simple, the number of itemsets expands rapidly in larger datasets, requiring more efficient algorithms. One key development is the Apriori principle (or downward closure property), which states that if an itemset is frequent, then so are all of its subsets. This principle significantly reduces the search space by systematically pruning candidate itemsets that fall below a minimum support threshold. The `tidyclust` extensions in this thesis use Apriori and Eclat, which both operate on this principle.
 
 ### Definitions
 
@@ -170,23 +120,23 @@ $\bigcup_k L_k$.
 
 The Equivalence Class Transformation (Eclat) algorithm [@zaki_scalable_2000] is an alternative to Apriori that uses a depth-first search strategy and vertical data representation. Instead of repeatedly scanning the dataset, Eclat represents transactions using tid-lists (transaction ID lists), which map each item or itemset to the IDs of transactions in which it appears. The method operates as follows:
 
-1.  Vertical Representation: Transform the transaction dataset $D$ into a vertical format, where each item $x$ maintains its tid-list:
+1.  Vertical Representation: Transform the transaction dataset $D$ into a vertical format, where each item $i$ maintains its tid-list:
 $$
-T(x) = {t \in D \mid x \in t}
+T(i) = {t \in D : i \in t}
 $$
 
 Initialize the set of frequent 1-items:
 $$
-L_1 = \{\{x\} \mid |T(x)| \geq \sigma \times |D|\}
+L_1 = \{\{i\} : |T(i)| \geq \sigma \times |D|\}
 $$
 
 2.  Depth-First Search: For each frequent itemset $X \in L_k$:
 
 <!-- -->
 
-a.  Candidate Generation: Extend $X$ with items $y > max(X)$ (lexicographic order to avoid redundant candidate generation) to form ($k$ + 1)-itemset candidates $X' = X \cup \{y\}$.
+a.  Candidate Generation: Extend $X$ with items $i > max(X)$ (lexicographic order to avoid redundant candidate generation) to form ($k$ + 1)-itemset candidates $X' = X \cup \{i\}$.
 
-b.  Tid-list Intersection: Compute the tid-list of $X’$ with set intersection: $$T(X’) = \bigcap_{x \in X’} T(x)$$
+b.  Tid-list Intersection: Compute the tid-list of $X’$ with set intersection: $$T(X’) = \bigcap_{i \in X’} T(i)$$
 
 c.  Support Verification: Keep $X’$ if: 
 $$
@@ -199,36 +149,38 @@ Add $X’$ to $L_{k + 1}$
 3.  Termination: Repeat step 2 until no new frequent itemsets are found ($L_k = \emptyset$). The set of all frequent itemsets is 
 $\bigcup_k L_k$.
 
-## tidyclust
+## The tidyclust Package
 
 The `tidyclust` package [@hvitfeldt_tidyclust_2022] extends the `tidymodels` [@kuhn_tidymodels_2020] framework to unsupervised tasks. These packages were built following the principles of the `tidyverse` [@wickham_welcome_2019], with the goal of establishing a consistent and reproducible workflow. Modeled closely on `parsnip` [@kuhn_parsnip_2024], `tidyclust` enables users to specify, fit, and predict with unsupervised learning models using a standardized syntax.
 
 ### Model Specification
 
-The `tidyclust` workflow mirrors established practices in unsupervised modeling, beginning with model specification and selection. For example, a K-means model with three clusters is specified as:
+The `tidyclust` workflow mirrors established practices in supervised modeling, beginning with model specification and selection. For example, a k-means model with three clusters is specified as:
 
 ```{r}
 #| prompt: true
-kmeans_spec <- k_means(num_clusters = 3) %>%
+#| eval: true
+kmeans_spec <- k_means(num_clusters = 3) |>
   set_engine("stats")
 ```
 
-Here, the function, `k_means` is the name of the model, and the parameter(s) (e.g., `num_clusters`) are the required and optional inputs for the model. In this case, `num_clusters = 3` defines a K-means model with three clusters. The `set_engine()` function selects the package implementation the model is being run on, here this is the `stats` package. The resulting object is called a `fi_spec()` object.
+Here, the function, `k_means` is the name of the model, and the parameter(s) (e.g., `num_clusters`) are the required and optional inputs for the model. In this case, `num_clusters = 3` defines a k-means model with three clusters. The `set_engine()` function selects the package implementation the model is being run on, here this is the `stats` package. The resulting object is called a `fi_spec()` object.
 
 ### Data Preprocessing
 
 Data preparation is taken care of by the `recipes` package [@kuhn_recipes_2024]. This package support a range of data transformations, including: feature scaling (e.g., normalization, standardization), categorical data encoding (e.g., dummy variables), data cleaning (e.g., missing value removal/imputation), and dimensionality  reduction (e.g., PCA, feature filtering). The package follows a declarative syntax, improving both readability by separating the data preparation code from the modeling code and reproducibility by ensuring consistent transformations across training and testing data.
 
-The following example uses the `palmerPenguins` dataset to create a recipe for K-means clustering:
+The following example uses the `palmerPenguins` dataset to create a recipe for k-means clustering:
 
 ```{r}
 #| prompt: true
+#| eval: true
 recipe <- recipe(
   ~ bill_length_mm + body_mass_g + sex, 
   data = penguins
-  ) %>%
-  step_naomit(all_predictors()) %>%
-  step_normalize(all_numeric_predictors()) %>%
+  ) |>
+  step_naomit(all_predictors()) |>
+  step_normalize(all_numeric_predictors()) |>
   step_dummy(all_nominal_predictors())
 ```
 
@@ -236,12 +188,13 @@ The recipe specifies predictors for the model and then removes any rows with mis
 
 ### Workflow Integration
 
-The `workflows` package [@vaughan_workflows_2024] combines the model definition and feature engineering into a single object, improving reproducibility, reducing risk of human error, and standardizing the unsupervised learning pipeline. This modular design allows users to modify preprocessing steps without changing model specifications and to reuse workflow elements across projects, ensuring consistency. For instance, an implementation using the previous examples is shown below:
+The `workflows` package [@vaughan_workflows_2024] combines the model definition and feature engineering into a single object, improving reproducibility, reducing risk of human error, and standardizing the modeling pipeline. This modular design allows users to modify preprocessing steps without changing model specifications and to reuse workflow elements across projects, ensuring consistency. For instance, an implementation using the previous examples is shown below:
 
 ```{r}
 #| prompt: true
-kmeans_workflow <- workflow() %>%  
-  add_recipe(recipe) %>%  
+#| eval: true
+kmeans_workflow <- workflow() |>  
+  add_recipe(recipe) |>  
   add_model(kmeans_spec)
 ```
 
@@ -251,6 +204,7 @@ The final phase of the `tidyclust` workflow includes model fitting and predictio
 
 ```{r}
 #| prompt: true
+#| eval: true
 kmeans_fit <- fit(kmeans_workflow, data = penguins)
 ```
 
@@ -262,27 +216,28 @@ The `predict()` function uses the fitted object and new observations as inputs, 
 
 ```{r}
 #| prompt: true
-cluster_assignment <- predict(kmeans_fit, new_data = penguins_new)
+#| eval: true
+kmeans_predict <- predict(kmeans_fit, new_data = penguins_new)
 ```
 
-The behavior of `predict()` varies based on the type of fitted model. For example, the K-means model from before predicts the cluster assignment for each new observation in the input data.
+The behavior of `predict()` varies based on the type of fitted model. For example, the k-means model from before predicts the cluster assignment for each new observation in the input data by identifying the nearest cluster center from the fitted model.
 
 ### Evaluation Metrics
 
-Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, metrics exist to measure the quality of the created clusters. For K-means, these metrics are sum of squared error (SSE) and silhouette. Ignoring how these metrics work, we can calculate them `tidymodels` as follows:
+Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, some metrics are implemented in `tidyclust` to measure the quality of the created clusters. For partition clustering like k-means, these metrics are sum of squared error (SSE) and silhouette. Here we omit the details of the metrics and show only the structure of the code to cacluclate them from a fitted cluster model:
 
 ```{r}
 #| prompt: true
-kmeans_fit %>% 
+kmeans_fit |> 
   sse_within_total()
 
-kmeans_fit %>% 
+kmeans_fit |> 
   sse_total()
 
-kmeans_fit %>% 
+kmeans_fit |> 
   sse_ratio()
 
-kmeans_fit %>% 
+kmeans_fit |> 
   silhouette_avg(penguins)
 ```
 
@@ -290,7 +245,7 @@ While specific metrics vary across `tidyclust` models, they can all be calculate
 
 ### Hyperparameter Tuning
 
-The `tidyclust` framework also provides model evaluation through through resampling and hyperparameter tuning. Grid search is implemented using the `tune` package [@kuhn_tune_2024], and can be paired with resampling methods like cross-validation to evaluate a model. Using the K-means example above, cross-validation is set up with 5 folds (`v = 5`).
+The `tidyclust` framework provides the ability to use existing resampling and hyperparameter tuning methods on unsupervised models. Grid search is implemented using the `tune` package [@kuhn_tune_2024], and can be paired with resampling methods like cross-validation to evaluate a model. Using the k-means example above, cross-validation is set up with 5 folds (`v = 5`).
 
 ```{r}
 #| prompt: true
@@ -301,11 +256,11 @@ In this model, since we are tuning the number of clusters `num_clusters` is chan
 
 ```{r}
 #| prompt: true
-tune_spec <- k_means(num_clusters = tune()) %>%
+tune_spec <- k_means(num_clusters = tune()) |>
   set_engine("stats")
 
-tune_workflow <- workflow() %>%  
-  add_recipe(recipe) %>%  
+tune_workflow <- workflow() |>  
+  add_recipe(recipe) |>  
   add_model(tune_spec)
 ```
 
@@ -336,7 +291,7 @@ rf_grid_search <-
   )
 ```
 
-The remaining sections of this thesis will be dedicated to the examination of the design and implementation choices made while implementing FIM in `tidyclust.` Section 3 details each step of the workflow and Section 4 addresses current limitations and proposed enhancements.
+The remaining sections of this thesis will be dedicated to the examination of the design and implementation choices made while implementing FIM in `tidyclust.` Chapter 3 details each step of the workflow and Chapter 4 addresses current limitations and proposed enhancements.
 
 # Frequent Itemset Mining with tidyclust
 
@@ -351,7 +306,7 @@ The model specification for frequent itemset mining follows the same structure a
 fi_spec <- freq_itemsets(
   min_support = 0.05, 
   mining_method = "eclat"
-  ) %>%
+  ) |>
   set_engine("arules")
 ```
 
@@ -365,7 +320,7 @@ While fitting a `freq_itemsets` model uses the same syntax, the output required 
 #| prompt: true
 #| eval: true
 #| output: false
-fi_fit <- fi_spec %>%
+fi_fit <- fi_spec |>
   fit(~ .,
     data = groceries
   )
@@ -375,11 +330,13 @@ A key strength of the `tidyclust` framework is its standardized output format ac
 
 ```{r}
 #| prompt: true
-fi_fit %>% 
-  extract_cluster_assignment()
+#| eval: true
+fi_fit |> 
+  extract_cluster_assignment() |>
+  head(5)
 ```
 
-However, unlike other unsupervised learning algorithms (e.g., K-means) that explicitly partition observations (rows) into distinct clusters, FIM identifies co-occurring items (columns)without inherent cluster labels. To address this, the following implementation introduces a clustering assignment strategy that assigns items to clusters based on itemset membership and support values:
+However, unlike other unsupervised learning algorithms (e.g., k-means) that explicitly partition observations (rows) into distinct clusters, FIM identifies co-occurring items (columns) without inherent cluster labels. To address this, the following implementation introduces a clustering assignment strategy that assigns items to clusters based on itemset membership and support values:
 
 For each items in the dataset:
 
@@ -393,7 +350,7 @@ For each items in the dataset:
 
 3. Cluster Propagation: Assigns all items in the selected itemsets to the same cluster. 
 
-If an item has already been assigned a Cluster, the algorithm compares the current "best" itemset with the itemset under consideration. It re-prioritizes based on the criteria above and reassigns all relevant items to a new cluster if the latter is superior.
+If an item has already been assigned a cluster, the algorithm compares the current "best" itemset with the itemset under consideration. It re-prioritizes based on the criteria above and reassigns all relevant items to a new cluster if the latter is superior. To remove any effect of item ordering, this strategy repeats until no items are reassigned to a new cluster (convergence).
 
 Items that appear in no frequent itemsets are labeled as outliers (Cluster_0_X) while items within frequent itemsets are assigned sequential cluster IDs (Cluster_1, Cluster_2, etc.).
 
@@ -406,11 +363,11 @@ Similar to the `fit()` method, while the syntax for predicting using a fitted `f
 ```{r}
 #| prompt: true
 #| eval: true
-fi_pred <- fi_fit %>%
-  predict(new_data = new_groceries)
+fi_pred <- fi_fit |>
+  predict(new_data = new_groceries, type = "raw")
 ```
 
-When determining how to predict using frequent itemsets, the goal was to develop a method with practical use in real-world applications. This led to the implemention of a recommender system, where the new data contains partial information about a transaction, and the model predicts other items that are likely to be in the transaction. For example, suppose a customer in a grocery store items `A` and `B` in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where `A` and `B` appeared together.
+When determining how to predict using frequent itemsets, the goal was to develop a method with practical use in real-world applications. This led to the implemention of a recommender system, where the new data contains partial information about a transaction, and the model predicts other items that are likely to be in the transaction. For example, suppose a customer in a grocery store has milk and bread in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where milk and bread appeared together.
 
 The recommender system implementation draws inspiration from traditional association rule mining techniques like CARs [@liu_integrating_1998] and usage-based recommendations [@mobasher_effective_2001]. The method predicts item-level probabilities using the confidence from frequent itemsets, retains interpretability from a rule-based reasoning approach, and handles sparse data through a global support fallback. Specifically, for each transaction in the new data:
 
@@ -431,14 +388,21 @@ $$
 
 5. Fallback Handling: If there are no relevant/retained itemsets, use the item's global support (frequency in training data) as the prediction. If the item does not appear in any frequent itemsets, then this global support will be 0.
 
-Aside from the `new_data` argument, `predict()` has the optional `type` argument which takes either 'raw' or 'cluster'. The raw option returns the raw prediction probabilities, while the default option cluster applies a threshold (0.5) to convert probabilities to binary predictions. Both options return the predictions as a `tibble` with the sole column `.pred_cluster`. 
+Aside from the `new_data` argument, `predict()` has the optional `type` argument which takes either 'raw' or 'cluster'. The raw option returns the raw prediction probabilities, while the default option cluster applies a threshold (0.5) to convert probabilities to binary predictions. Both options return the predictions as a `tibble` with the sole column `.pred_cluster`. The output of predict from the k-means model in Chapter 2 is:
+
+```{r}
+#| prompt: true
+#| eval: true
+kmeans_predict |>
+  head(5)
+```
 
 While this `tibble` format is standardized across `tidyclust` predict outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. 
 
 ```{r}
 #| prompt: true
 #| eval: true
-fi_pred %>%
+fi_pred |>
   head(5)
 ```
 
@@ -447,72 +411,72 @@ This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `it
 ```{r}
 #| prompt: true
 #| eval: true
-fi_pred$.pred_cluster[[1]] %>%
-  head(5) %>%
-  kable(align = 'r')
+fi_pred$.pred_cluster[[1]] |>
+  head(5) |>
+  kable(align = 'r', digits = 4)
 ```
 
-This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, the function `extract_predictions` takes the `tibble` output and reformat it to a single data frame.
+This structure allows the user to easily identify what values are observed or predicted in each transaction while still containing all the information necessary to recreate the original transaction dataset. To assist the user with reconstruction, we provide a new function `extract_predictions()` which takes the `tibble` output and reformat it to a single data frame.
 
 ```{r}
 #| prompt: true
 #| eval: true
-fi_pred %>%
-  extract_predictions() %>%
-  head(c(5, 6)) %>%
-  kable(align = 'r')
+fi_pred |>
+  extract_predictions() |>
+  head(c(5, 6)) |>
+  kable(align = 'r', digits = 4)
 ```
 
 ## Evaluation Metrics
 
-While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommender system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. The `augment_itemset_predict()` function in `tidyclust` formats the `predict()` output accordingly.
+While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommender system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. To prepare the `predict()` output for metric calculation, we provide a new function `augment_itemset_predict()`.
 
 ```{r}
 #| prompt: true
-fi_fit %>%
-  predict(new_data = new_groceries, type = 'raw') %>%
-  augment_itemset_predict(truth) %>%
+fi_fit |>
+  predict(new_data = new_groceries, type = 'raw') |>
+  augment_itemset_predict(truth) |>
   rmse(truth, preds)
 
-fi_fit %>%
-  predict(new_data = new_groceries, type = 'cluster') %>%
-  augment_itemset_predict(truth) %>%
+fi_fit |>
+  predict(new_data = new_groceries, type = 'cluster') |>
+  augment_itemset_predict(truth) |>
   mutate(
     truth = factor(truth, levels = c(0, 1)), 
     preds = factor(preds, levels = c(0, 1))
-    ) %>%
+    ) |>
   precision(truth, preds)
 ```
 
-When using RMSE, the raw `predict()` output should be used, while accuracy, precision, and recall will use the cluster output or user thresholded `raw` output. Caution should be used when looking at accuracy, precision, and recall since they can be misleading for imbalanced datasets (where items are infrequently purchased). In such cases, F1-Score offers a balance between precision and recall, and precision-recall curves [@saito_precision-recall_2015] aid in determine the best threshold value.
+When using RMSE, the raw `predict()` output should be used, while accuracy, precision, and recall will use the cluster output or user thresholded `raw` output. To use the `precision()` function, the mutate step encodes the true and predicted values as factors, which are the required input types. Caution should be used when looking at accuracy, precision, and recall since they can be misleading for imbalanced datasets (where items are infrequently purchased). In such cases, F1-Score offers a balance between precision and recall, and precision-recall (PR) curves [@saito_precision-recall_2015] aid in determining the best threshold value.
 
 ```{r}
 #| prompt: true
 #| eval: true
-fi_fit %>%
-  predict(new_data = new_groceries, type = 'raw') %>%
-  augment_itemset_predict(truth) %>%
-  mutate(truth = factor(truth, levels = c(0, 1))) %>%
-  pr_curve(truth, preds) %>%
+fi_fit |>
+  predict(new_data = new_groceries, type = 'raw') |>
+  augment_itemset_predict(truth) |>
+  mutate(truth = factor(truth, levels = c(0, 1))) |>
+  pr_curve(truth, preds) |>
   autoplot()
 ```
 
+Each point on the PR curve represents the precision and recall of the model at a specific threshold. By varying this threshold, we get different precision and recall values, creating the curve. The ideal curve is close to the top-right corner, indicating high precision and high recall. This curve shows that the model can achieve high precision and recall across a wide range of thresholds.
+
 ## Hyperparameter Tuning
 
-The sole parameter capable of being tuned in a FIM model is `min_support`. As noted in the Model Specification section, there is no default `min_support` value since this value varies depending on the characteristics of the dataset. Therefore, selecting the correct value is imperative for finding useful frequent itemsets. The default grid for `min_support` is from 0.1 to 0.5. The lower bound of 0.1 was chosen to avoid reporting too many frequent itemsets, even for smaller datasets, while the upper bound of 0.5 was selected since it ensures that at each frequent itemset has a support of at least 50%.
+The sole parameter capable of being tuned in a FIM model is `min_support`. As noted in Chapter 2.2.1 (Model Specification), there is no default `min_support` value since this value varies depending on the characteristics of the dataset. Therefore, selecting the correct value is imperative for finding useful frequent itemsets. The default grid for `min_support` is from 0.1 to 0.5. The lower bound of 0.1 was chosen to avoid reporting too many frequent itemsets, even for smaller datasets, while the upper bound of 0.5 was selected since it ensures that at each frequent itemset has a support of at least 50%.
 
 ```{r}
 #| prompt: true
 #| eval: true
-min_support_grid <- grid_regular(
+grid_regular(
   min_support(), 
   levels = 10
   )
-
-min_support_grid
 ```
 
-Usually the above object is paired with `tune_cluster` as seen in the previous K-means example, however cross-validation is not currently implemented for FIM. Suggestions for improved tuning and implementing cross validation will be discussed in sections 4.3 and 4.5.
+Usually the above object is paired with `tune_cluster` as seen in the previous k-means example, however cross-validation is not currently implemented for FIM. Suggestions for improved tuning and implementing cross validation will be discussed in sections 4.3 and 4.5.
 
 # Limitations and Future Directions
 
@@ -524,7 +488,7 @@ The current clustering method prioritizes itemsets based on size and support, as
 
 ## Prediction Methodology
 
-The prediction implementation currently averages confidence scores across all matching itemsets to determine. Additional methods may improve predictive performance, such as using the maximum confidence [@mobasher_effective_2001] or a weighted average by itemset size or support. These methods could be added as an optional parameter for the user in the predict function: 
+The prediction implementation currently averages confidence scores across all matching itemsets to determine the predicted probability of a missing item. Additional methods may improve predictive performance, such as using the maximum confidence [@mobasher_effective_2001] or a weighted average by itemset size or support. These methods could be added as an optional parameter for the user in the predict function: 
 
 ```{r}
 #| prompt: true
@@ -539,7 +503,7 @@ Furthermore, these methods do not incorporate the cluster assignments created wh
 
 ## Hyperparameter Tuning
 
-The current implementation requires manual specification of `min_support` ranges for tuning. This presents challenges for users unfamiliar with their datasets characteristics or new to frequent itemset mining. The `tune` package used in `tidyclust` relies on the `dials` package [@kuhn_dials_2024], which offers finalize functions. These functions take the dataset as a parameter and modify the unknown parts of ranges based on the dataset. Building on Dahbi et al.'s [-@dahbi_finding_2021] statistically-grounded approach, I propose a two-step approach:
+The current implementation requires manual specification of `min_support` ranges for tuning. This presents challenges for users unfamiliar with their datasets characteristics or new to frequent itemset mining. The `tune` package used in `tidyclust` relies on the `dials` package [@kuhn_dials_2024], which offers `finalize` functions. These functions take the dataset as a parameter and modify the unknown parts of ranges based on the dataset. Building on Dahbi et al.'s [-@dahbi_finding_2021] statistically-grounded approach, I propose a two-step approach:
 
 1. Calculate the mean support of all 1-itemsets:
 $$
@@ -573,7 +537,366 @@ The primary objective of cross-validation in frequent itemset mining is to deter
 
 To address these issues, I propose item-stratified CV. This approach constructs folds that preserve the overall frequency distribution of items, ensuring that each fold is representative in terms of both item frequencies and co-occurrence patterns. By stratifying on items rather than transactions, we maintain the structural integrity of the itemsets and prevent support distortion across folds. For datasets with temporal components, such as purchases over time, using earlier time periods for training and later periods for validation would reflect real-world deployment. In both approaches, prediction is evaluated by masking a random subset (e.g., 20%–30%) of items within each transaction in the validation set. The model then predicts the masked items based on the observed partial basket. 
 
+# Conclusion
+
+This work provides new functionality in the `tidyclust` package by implementing a cluster specification for frequent itemset mining. Substantial modifications to existing `tidyclust` methods such as `fit()` and `predict()` were created to handle the unique output of the Apriori and Eclat algorithms. Furthermore, several new functions were built to support this implementation. These include `extract_predictions()` which reformats the complex prediction output to a user-friendly format, and `augment_itemset_predict()` that prepares prediction output for evaluation using standard metric functions.
+
 # References
 
 ::: {#refs}
 :::
+
+\appendix
+
+\chapter{Fit Function}
+
+```{r}
+#| prompt: true
+.freq_itemsets_fit_arules <- function(x,
+                                      min_support = NULL,
+                                      mining_method = NULL) {
+
+  if (is.null(min_support)) {
+    rlang::abort(
+      "Please specify `min_support` 
+      to be able to fit specification.",
+      call = call("fit")
+    )
+  }
+
+  if (mining_method == "apriori") {
+    res <- arules::apriori(data = x, parameter = list(
+      support = min_support, 
+      target = "frequent itemsets")
+      )
+  } else if (mining_method == "eclat") {
+    res <- arules::eclat(
+      data = x, 
+      parameter = list(support = min_support)
+      )
+  } else {
+    stop("Invalid method specified. Choose 'apriori' or 'eclat'.")
+  }
+
+  attr(res, "item_names") <- colnames(x)
+  return(res)
+}
+```
+
+\chapter{Cluster Functions}
+
+```{r}
+#| prompt: true
+extract_cluster_assignment.itemsets <- function(object, ...) {
+  items <- attr(object, "item_names")
+  itemsets <- arules::DATAFRAME(object)
+
+  itemset_list <- lapply(strsplit(gsub(
+    "[{}]", 
+    "", 
+    itemsets$items), 
+    ","),
+    stringr::str_trim)
+  support <- itemsets$support
+  clusters <- numeric(length(items))
+  changed <- TRUE  # Flag to track convergence
+
+  # Continue until no changes occur
+  while (changed) {
+    changed <- FALSE
+    for (i in 1:length(items)) {
+      current_item <- items[i]
+      relevant_itemsets <- which(
+        sapply(
+          itemset_list,
+          function(x) current_item %in% x
+          )
+        )
+
+      if (length(relevant_itemsets) == 0) next
+
+      # Find the best itemset (largest size, then highest support)
+      best_itemset <- relevant_itemsets[
+        which.max(
+          sapply(itemset_list[relevant_itemsets], length) * 1000 + 
+          support[relevant_itemsets]                                
+          )
+        ]
+      best_itemset_size <- length(itemset_list[[best_itemset]])
+      best_itemset_support <- support[best_itemset]
+
+      # Current cluster info (if any)
+      current_cluster <- clusters[i]
+      current_cluster_size <- if (current_cluster != 0)
+        length(itemset_list[[current_cluster]]) else 0
+      current_cluster_support <- if (current_cluster != 0)
+        support[current_cluster] else 0
+
+      # Reassign if:
+      # 1. No current cluster, OR
+      # 2. New itemset is larger, OR
+      # 3. Same size but higher support
+      if (current_cluster == 0 ||
+          best_itemset_size > current_cluster_size ||
+          (best_itemset_size == current_cluster_size &&
+          best_itemset_support > current_cluster_support)) {
+
+        # Assign all items in the best itemset to its cluster
+        new_cluster <- best_itemset
+        items_in_best <- match(itemset_list[[best_itemset]], items)
+
+        if (!all(clusters[items_in_best] == new_cluster)) {
+          clusters[items_in_best] <- new_cluster
+          changed <- TRUE  # Mark that a change occurred
+        }
+      }
+    }
+  }
+
+  item_assignment_tibble_w_outliers(clusters, ...)
+}
+
+item_assignment_tibble_w_outliers <- function(clusters,
+                                              ...,
+                                              prefix = "Cluster_") {
+  # Vector to store the resulting cluster names
+  res <- character(length(clusters))
+
+  # For items with cluster value 0, assign to "Cluster_0"
+  res[clusters == 0] <- "Cluster_0"
+  zero_count <- 0
+  res <- sapply(res, function(x) {
+    if (x == "Cluster_0") {
+      zero_count <<- zero_count + 1
+      paste0("Cluster_0_", zero_count)
+    } else {
+      x
+    }
+  })
+
+  # For non-zero clusters, assign sequential cluster numbers
+  non_zero_clusters <- clusters[clusters != 0]
+  unique_non_zero_clusters <- unique(non_zero_clusters)
+
+  # Map each unique non-zero cluster to a new cluster
+  cluster_map <- setNames(paste0(
+    prefix, 
+    seq_along(unique_non_zero_clusters)), 
+    unique_non_zero_clusters
+    )
+
+  # Assign the corresponding cluster names to the non-zero clusters
+  res[clusters != 0] <- cluster_map[as.character(non_zero_clusters)]
+
+  tibble::tibble(.cluster = factor(res))
+}
+```
+
+\chapter{Predict Functions}
+
+```{r}
+#| prompt: true
+itemsets_predict_helper <- function(
+    object, 
+    new_data, 
+    ..., 
+    prefix = "Cluster_"
+    ) {
+  new_data <- as.data.frame(new_data)
+
+  # Extract frequent itemsets and their supports
+  items <- attr(object, "item_names")
+  itemsets <- arules::DATAFRAME(object)
+  frequent_itemsets <- lapply(strsplit(gsub(
+    "[{}]", 
+    "", 
+    itemsets$items
+    ), ","), 
+    stringr::str_trim)
+  supports <- itemsets$support
+
+  # Calculate global support for each item (fallback)
+  global_supports <- sapply(items, function(item) {
+    containing <- sapply(frequent_itemsets, function(x) item %in% x)
+    if (any(containing)) {
+      sum(supports[containing]) / sum(containing)
+    } else {
+      0
+    }
+  })
+
+  # Process each row of new_data
+  result_list <- lapply(1:nrow(new_data), function(i) {
+    row_data <- new_data[i, ]
+    observed <- names(row_data)[row_data == 1]
+    missing <- names(row_data)[is.na(row_data)]
+
+    # Initialize prediction vector
+    pred_values <- rep(NA, length(items))
+    names(pred_values) <- items
+
+    # Calculate probabilities for missing items
+    for (item in missing) {
+      # Itemsets containing current item and at least one observed
+      relevant <- sapply(frequent_itemsets, function(x) {
+        item %in% x && any(observed %in% x)
+      })
+
+      if (!any(relevant)) {
+        pred_values[item] <- global_supports[item]
+        next
+      }
+
+      # Calculate confidences
+      confidences <- sapply(which(relevant), function(idx) {
+        itemset <- frequent_itemsets[[idx]]
+        itemset_without <- setdiff(itemset, item)
+
+        # Find support of itemset without the current item
+        if (length(itemset_without) == 0) return(NA)
+
+        matches <- sapply(frequent_itemsets, 
+                          function(x) identical(x, itemset_without))
+        if (!any(matches)) return(NA)
+
+        supports[idx] / supports[matches][1]
+      })
+
+      pred_values[item] <- mean(confidences, na.rm = TRUE)
+      if (is.nan(pred_values[item])) {
+        pred_values[item] <- global_supports[item]
+      }
+    }
+
+    # Create result data frame
+    data.frame(
+      item = stringr::str_remove_all(items, "`"), # Remove backticks
+      .obs_item = unlist(row_data),
+      .pred_item = pred_values,
+      row.names = NULL
+    )
+  })
+}
+
+.freq_itemsets_predict_raw_arules <- function(
+    object, 
+    new_data, 
+    ..., 
+    prefix = "Cluster_"
+    ) {
+  res <- itemsets_predict_helper(
+    object, 
+    new_data, 
+    ..., 
+    prefix = "Cluster_"
+    )
+  return(tibble::tibble(.pred_cluster = unname(res)))
+}
+
+.freq_itemsets_predict_arules <- function(
+    object, 
+    new_data, 
+    ..., 
+    prefix = "Cluster_"
+    ) {
+  res <- itemsets_predict_helper(
+    object, 
+    new_data, 
+    ...,
+    prefix = "Cluster_"
+    )
+  # Apply threshold to raw predictions
+  lapply(res, function(df) {
+    df$.pred_item <- ifelse(is.na(df$.obs_item),
+                            ifelse(df$.pred_item >= 0.5, 1, 0),
+                            NA)
+    df
+  })
+}
+```
+
+```{r}
+#| prompt: true
+extract_predictions <- function(pred_output) {
+  # Extract the list of data frames from the single column
+  data_frames <- pred_output$.pred_cluster
+
+  # Process each observation and combine results using reduce
+  result_df <- data_frames %>%
+    purrr::reduce(.f = ~ {
+      # Process each observation (data frame)
+      processed <- .y %>%
+        dplyr::mutate(
+          value = ifelse(
+            !is.na(.obs_item), 
+            .obs_item, 
+            .pred_item)
+          ) %>%
+        dplyr::select(item, value) %>%
+        tidyr::pivot_wider(names_from = item, values_from = value)
+
+      # Combine the processed data frame with the results
+      dplyr::bind_rows(.x, processed)
+    }, .init = NULL)
+
+  return(result_df)
+}
+```
+
+\chapter{Metric Function}
+
+```{r}
+#| prompt: true
+augment_itemset_predict <- function(pred_output, truth_output) {
+  # Extract all predictions (bind all .pred_cluster dataframes)
+  preds_df <- dplyr::bind_rows(
+    pred_output$.pred_cluster, 
+    .id = "row_id"
+    ) %>%
+    dplyr::filter(!is.na(.pred_item)) %>%
+    dplyr::mutate(item = stringr::str_remove_all(item, "`")) %>%
+    dplyr::select(row_id, item, preds = .pred_item)
+
+  # Pivot truth data to long format (to match predictions)
+  truth_long <- truth_output %>%
+    tibble::rownames_to_column("row_id") %>%
+    tidyr::pivot_longer(
+      cols = -row_id,
+      names_to = "item",
+      values_to = "truth_value"
+    )
+
+  # Join predictions with truth
+  result <- preds_df %>%
+    dplyr::inner_join(truth_long, by = c("row_id", "item"))
+
+  # Return simplified output (preds vs truth)
+  dplyr::select(result, item, row_id, preds, truth = truth_value)
+}
+  
+random_na_with_truth <- function(df, na_prob = 0.3) {
+  # Create a copy of the original dataframe to store truth values
+  truth_df <- df
+
+  # Create a mask of NAs (TRUE = becomes NA)
+  na_mask <- matrix(
+    sample(
+      c(TRUE, FALSE),
+      size = nrow(df) * ncol(df),
+      replace = TRUE,
+      prob = c(na_prob, 1 - na_prob)
+    ),
+    nrow = nrow(df)
+  )
+
+  # Apply the mask to create NA values
+  na_df <- df
+  na_df[na_mask] <- NA
+
+  # Return both the NA-filled dataframe and the truth
+  list(
+    na_data = na_df,
+    truth = truth_df
+  )
+}
+```
