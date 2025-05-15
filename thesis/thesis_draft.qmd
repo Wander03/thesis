@@ -16,9 +16,9 @@ format:
       - committee-page.tex
       - abstract.tex
       - acknowledgments.tex
-    toc: true
-    lot: true
-    lof: true
+    toc: false
+    lot: false
+    lof: false
     number-sections: true
     citation-style: apa
     bibliography: freq_itemsets_citations.bib
@@ -54,6 +54,21 @@ truth <- na_result$truth
 sample_indices <- sample(nrow(penguins), size = floor(0.10 * nrow(penguins)))
 penguins_new <- penguins[sample_indices, ]
 ```
+
+\tableofcontents
+\newpage
+
+\listoftables
+\addcontentsline{toc}{chapter}{\uppercase{List of Tables}}
+\newpage
+
+\listoffigures
+\addcontentsline{toc}{chapter}{\uppercase{List of Figures}}
+\newpage
+
+\addtocontents{toc}{%
+   \noindent CHAPTER
+}
 
 \mainmatter
 
@@ -544,7 +559,10 @@ To address these issues, I propose item-stratified CV. This approach constructs 
 
 This work provides new functionality in the `tidyclust` package by implementing a cluster specification for frequent itemset mining. Substantial modifications to existing `tidyclust` methods such as `fit()` and `predict()` were created to handle the unique output of the Apriori and Eclat algorithms. Furthermore, several new functions were built to support this implementation. These include `extract_predictions()` which reformats the complex prediction output to a user-friendly format, and `augment_itemset_predict()` that prepares prediction output for evaluation using standard metric functions.
 
-# References
+\addcontentsline{toc}{chapter}{\uppercase{References}}
+\newpage
+
+\chapter*{References}
 
 ::: {#refs}
 :::
