@@ -17,14 +17,13 @@ format:
       - abstract.tex
       - acknowledgments.tex
     toc: true
-    lot: false
-    lof: false
+    lot: true
+    lof: true
     number-sections: true
     citation-style: apa
     bibliography: freq_itemsets_citations.bib
     csl: apa-6th-edition.csl
-    include-in-header:
-      file: formating.tex
+    include-in-header: formating.tex
 eval: false
 ---
 
@@ -77,6 +76,7 @@ Frequent itemset mining (FIM) methods were developed to identify the elements wi
 ```{r}
 #| eval: true
 #| echo: false
+#| tbl-cap: "Example Grocery Transactional Dataset"
 data.frame(
   'milk' = c(1, 0, 1, 1, 1),
   'eggs' = c(0, 1, 0, 0, 0),
@@ -411,6 +411,7 @@ This dataframe has three columns: `item`, `.obs_item`, and `.pred_item`. The `it
 ```{r}
 #| prompt: true
 #| eval: true
+#| tbl-cap: "Dataframe within .pred_cluster"
 fi_pred$.pred_cluster[[1]] |>
   head(5) |>
   kable(align = 'r', digits = 4)
@@ -421,6 +422,7 @@ This structure allows the user to easily identify what values are observed or pr
 ```{r}
 #| prompt: true
 #| eval: true
+#| tbl-cap: "extract_predictions() Output Dataframe"
 fi_pred |>
   extract_predictions() |>
   head(c(5, 6)) |>
@@ -453,6 +455,7 @@ When using RMSE, the raw `predict()` output should be used, while accuracy, prec
 ```{r}
 #| prompt: true
 #| eval: true
+#| fig-cap: "Precision-Recall Curve of Example Grocery Data"
 fi_fit |>
   predict(new_data = new_groceries, type = 'raw') |>
   augment_itemset_predict(truth) |>

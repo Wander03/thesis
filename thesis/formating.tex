@@ -47,6 +47,29 @@
 \patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{plain}}{}{}
 \makeatother
 
+% --- LIST OF TABLES , add it to the table of contents ---
+% \chapter*{
+%     \MakeUppercase{List of Tables}
+%     \@mkboth{\MakeUppercase{List of Tables}}{\MakeUppercase{List of Tables}}
+% }
+\addcontentsline{toc}{chapter}{\uppercase{List of Tables}}
+% \listoftables
+
+% \@dottedtocline{1}{1.5em}{3.2em}
+
+% --- List of figures, add it to the table of contents ---
+% \chapter*{
+%   \MakeUppercase{List of Figures}
+%   \@mkboth{\MakeUppercase{List of Figures}}{\MakeUppercase{List of Figures}}
+% }
+\addcontentsline{toc}{chapter}{\uppercase{List of Figures}}
+% \listoffigures
+
+% --- Add CHAPTER into table of content ---
+\addtocontents{toc}{%
+   \noindent CHAPTER
+}
+
 % --- Custom TOC Formatting for Appendix ---
 \addtocontents{toc}{%
   \protect\renewcommand{\protect\cftchapfont}{\protect\normalfont}%
