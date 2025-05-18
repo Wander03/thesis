@@ -16,9 +16,7 @@ format:
       - committee-page.tex
       - abstract.tex
       - acknowledgments.tex
-    toc: false
-    lot: false
-    lof: false
+      - table-of-contents.tex
     number-sections: true
     citation-style: apa
     bibliography: freq_itemsets_citations.bib
@@ -54,23 +52,6 @@ truth <- na_result$truth
 sample_indices <- sample(nrow(penguins), size = floor(0.10 * nrow(penguins)))
 penguins_new <- penguins[sample_indices, ]
 ```
-
-\tableofcontents
-\newpage
-
-\listoftables
-\addcontentsline{toc}{chapter}{\uppercase{List of Tables}}
-\newpage
-
-\listoffigures
-\addcontentsline{toc}{chapter}{\uppercase{List of Figures}}
-\newpage
-
-\addtocontents{toc}{%
-   \noindent CHAPTER
-}
-
-\mainmatter
 
 # Introduction
 
@@ -559,17 +540,20 @@ To address these issues, I propose item-stratified CV. This approach constructs 
 
 This work provides new functionality in the `tidyclust` package by implementing a cluster specification for frequent itemset mining. Substantial modifications to existing `tidyclust` methods such as `fit()` and `predict()` were created to handle the unique output of the Apriori and Eclat algorithms. Furthermore, several new functions were built to support this implementation. These include `extract_predictions()` which reformats the complex prediction output to a user-friendly format, and `augment_itemset_predict()` that prepares prediction output for evaluation using standard metric functions.
 
-\addcontentsline{toc}{chapter}{\uppercase{References}}
-\newpage
+# COMPUTATIONAL DETAILS {.unnumbered}
 
-\chapter*{References}
+The results in this paper were obtained using `R` 4.4.1 with the
+`tidyclust` 0.2.3.9000 package. `R` itself and all packages used are available 
+from the Comprehensive `R` Archive Network (CRAN) at [https://CRAN.R-project.org/].
+
+# REFERENCES {.unnumbered}
 
 ::: {#refs}
 :::
 
 \appendix
 
-\chapter{Fit Function}
+# Fit Function
 
 ```{r}
 #| prompt: true
@@ -603,8 +587,7 @@ This work provides new functionality in the `tidyclust` package by implementing 
   return(res)
 }
 ```
-
-\chapter{Cluster Functions}
+# Cluster Functions
 
 ```{r}
 #| prompt: true
@@ -713,7 +696,7 @@ item_assignment_tibble_w_outliers <- function(clusters,
 }
 ```
 
-\chapter{Predict Functions}
+# Predict Functions
 
 ```{r}
 #| prompt: true
@@ -864,7 +847,7 @@ extract_predictions <- function(pred_output) {
 }
 ```
 
-\chapter{Metric Function}
+# Metric Function
 
 ```{r}
 #| prompt: true
