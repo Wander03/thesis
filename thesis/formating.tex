@@ -31,7 +31,7 @@
 % --- Appendix Formatting ---
 \let\oldappendix\appendix
 \renewcommand{\appendix}{%
-  \clearpage
+  \chapter*{\centering\normalsize\MakeUppercase{APPENDICES}}
   \oldappendix
   \renewcommand{\thechapter}{\Alph{chapter}}%
   \addtocontents{toc}{APPENDICES\par}
