@@ -287,7 +287,7 @@ rf_grid_search <-
   )
 ```
 
-The remaining sections of this thesis will be dedicated to the examination of the design and implementation choices made while implementing FIM in `tidyclust.` Chapter 3 details each step of the workflow and Chapter 4 addresses current limitations and proposed enhancements.
+The remaining chapters of this thesis will be dedicated to the examination of the design and implementation choices made while implementing FIM in `tidyclust.` Chapter 3 details each step of the workflow and Chapter 4 addresses current limitations and proposed enhancements.
 
 # Frequent Itemset Mining with tidyclust
 
@@ -475,7 +475,7 @@ grid_regular(
   )
 ```
 
-Usually the above object is paired with `tune_cluster` as seen in the previous k-means example, however cross-validation is not currently implemented for FIM. Suggestions for improved tuning and implementing cross validation will be discussed in sections 4.3 and 4.5.
+Usually the above object is paired with `tune_cluster` as seen in the previous k-means example, however cross-validation is not currently implemented for FIM. Suggestions for improved tuning and implementing cross validation will be discussed in chapters 4.3 and 4.5.
 
 # Limitations and Future Directions
 
@@ -540,7 +540,7 @@ To address these issues, I propose item-stratified CV. This approach constructs 
 
 This work provides new functionality in the `tidyclust` package by implementing a cluster specification for frequent itemset mining. Substantial modifications to existing `tidyclust` methods such as `fit()` and `predict()` were created to handle the unique output of the Apriori and Eclat algorithms. Furthermore, several new functions were built to support this implementation. These include `extract_predictions()` which reformats the complex prediction output to a user-friendly format, and `augment_itemset_predict()` that prepares prediction output for evaluation using standard metric functions.
 
-# COMPUTATIONAL DETAILS {.unnumbered}
+## COMPUTATIONAL DETAILS
 
 The results in this paper were obtained using `R` 4.4.1 with the
 `tidyclust` 0.2.3.9000 package. `R` itself and all packages used are available 
@@ -587,6 +587,7 @@ from the Comprehensive `R` Archive Network (CRAN) at [https://CRAN.R-project.org
   return(res)
 }
 ```
+
 # Cluster Functions
 
 ```{r}

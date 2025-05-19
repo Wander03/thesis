@@ -1,14 +1,24 @@
 % --- Package Loading ---
 \usepackage{etoolbox}
 \usepackage{tocloft}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{hyperref}
 
 % --- Front Matter Numbering ---
 \pagenumbering{roman}
 
-% --- Format the titles: ToC, LoF, LoT ---
-\renewcommand{\cfttoctitlefont}{\normalsize\MakeUppercase} % 12pt, ALL CAPS
-\renewcommand{\cftloftitlefont}{\normalsize\MakeUppercase}
-\renewcommand{\cftlottitlefont}{\normalsize\MakeUppercase}
+% --- Format the titles: ToC, LoF, LoT ---  
+\renewcommand{\cfttoctitlefont}{\normalsize\MakeUppercase\hfill TABLE OF CONTENTS \hfill}
+\renewcommand{\cftlottitlefont}{\normalsize\MakeUppercase\hfill LIST OF TABLES \hfill}
+\renewcommand{\cftloftitlefont}{\normalsize\MakeUppercase\hfill LIST OF FIGURES \hfill}
+
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{10pt}
+\setlength{\cftbeforelottitleskip}{0pt}
+\setlength{\cftafterlottitleskip}{10pt}
+\setlength{\cftbeforeloftitleskip}{0pt}
+\setlength{\cftafterloftitleskip}{10pt}
 
 % --- Main Matter Control ---
 \newcommand{\frontmatter}{}
@@ -33,7 +43,6 @@
 }
 
 % --- Chapter/Section Formatting ---
-\usepackage{titlesec}
 \titleformat{\chapter}[display]
   {\normalfont\centering}
   {\chaptertitlename\ \thechapter}
@@ -42,9 +51,9 @@
 \titleformat*{\section}{\normalfont\bfseries}
 \titleformat*{\subsection}{\normalfont\bfseries}
 \titleformat*{\subsubsection}{\normalfont\bfseries}
+\titlespacing{\chapter}{0pt}{0pt}{20pt} % {left}{beforesep}{aftersep}
 
 % --- Line Spacing ---
-\usepackage{setspace}
 \doublespacing
 
 % --- Chapter Page Style ---
@@ -60,3 +69,17 @@
   \protect\renewcommand{\protect\cftchapindent}{0pt}%
   \protect\renewcommand{\protect\cftbeforechapskip}{0pt}%
 }
+
+% --- Set link colors to black ---
+\makeatletter
+\AtBeginDocument{
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    filecolor=black,
+    urlcolor=black,
+    pdfborder={0 0 0}
+  }
+}
+\makeatother
