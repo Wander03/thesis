@@ -544,7 +544,7 @@ This work provides new functionality in the `tidyclust` package by implementing 
 
 The results in this paper were obtained using `R` 4.4.1 with the
 `tidyclust` 0.2.3.9000 package. `R` itself and all packages used are available 
-from the Comprehensive `R` Archive Network (CRAN) at [https://CRAN.R-project.org/].
+from the Comprehensive `R` Archive Network (CRAN) at https://CRAN.R-project.org/.
 
 # REFERENCES {.unnumbered}
 
