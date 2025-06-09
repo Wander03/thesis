@@ -15,7 +15,7 @@ format:
       - copyright-page.tex
       - committee-page.tex
       - abstract.tex
-      - acknowledgments.tex
+      # - acknowledgments.tex
       - table-of-contents.tex
     number-sections: true
     citation-style: apa
@@ -40,8 +40,6 @@ library(palmerpenguins)
 library(recipes)
 library(workflows)
 
-
-
 data(Groceries)
 groceries <- as.data.frame(as(Groceries, "matrix")) |>
   mutate(across(everything(), ~.*1))
@@ -57,11 +55,11 @@ penguins_new <- penguins[sample_indices, ]
 
 Frequent itemset mining (FIM) has been a growing area of research in data mining since the early 1990s. The work of Agrawal, Imieliński, and Swami [-@agrawal_mining_1993] introduced the Apriori algorithm, which established the foundation for identifying co-occurring items in transactional datasets. Shortly after, algorithms such as FP-growth’s FP-tree structure [@han_mining_2000] and Elcat’s vertical tid-list approach [@zaki_scalable_2000] significantly improved the performance and scalability of FIM techniques. These techniques have since been applied to a wide range of applications, including market basket analysis, web personalization [@mobasher_effective_2001], and associative classification [@liu_integrating_1998].
 
-Although FIM has become more efficient, practical implementations are often confined to specialized software packages. For example, the R programming environment offers itemset mining through the `arules` package [@hahsler_arules_2011], while Python users rely on `mlxtend` [@raschka_mlxtend_2018]. However, these implementations typically operate as standalone applications, lacking integration within modern data science workflows. This absence of native integration with frameworks like `tidymodels` [@kuhn_tidymodels_2020] or `scikit-learn` [@buitinck_api_2013] creates a need for analysts to develop custom solutions.
+Although FIM has become more efficient, one problem is that practical implementations are often confined to specialized software packages. For example, the R programming environment offers itemset mining through the `arules` package [@hahsler_arules_2011], while Python users rely on `mlxtend` [@raschka_mlxtend_2018]. However, these implementations typically operate as standalone applications, lacking integration within modern data science workflows. This absence of native integration with frameworks like `tidymodels` [@kuhn_tidymodels_2020] or `scikit-learn` [@buitinck_api_2013] creates a need for analysts to develop custom solutions.
 
-Another limitation lies in the uses of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
+Another problem lies in the limited use of FIM results. Frequent itemsets are commonly treated as either final outputs, or inputs for generating association rules. However, research by Cheng et al. [-@cheng_discriminative_2007] demonstrated that itemsets can also be used in classification tasks, while other studies have explored how itemsets can be used in clustering tasks [@mobasher_effective_2001; @wickramaratna_predicting_2009]. Although these approaches lack a standardized method, the use of FIM in these methods indicates a potential for integration with clustering workflows.
 
-This thesis addresses these limitations by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms, this work allows itemset mining to be used within unsupervised workflows. Furthermore, it establishes a standard methodology for predicting missing items and lays a foundation for integrating future data mining and clustering techniques into `tidyclust`. The source code for the work in this thesis can be found at https://github.com/Wander03/tidyclust.
+This thesis provides a direct solution to these challenges by introducing FIM to `tidyclust` [@hvitfeldt_tidyclust_2022], a package designed for unsupervised learning algorithms within the `tidymodel` framework. By adapting the Apriori and Eclat algorithms, this work allows itemset mining to be used within unsupervised workflows. Furthermore, it establishes a standard methodology for predicting missing items and lays a foundation for integrating future data mining and clustering techniques into `tidyclust`. The source code for the work in this thesis can be found at https://github.com/Wander03/tidyclust.
 
 # Background
 
@@ -220,7 +218,7 @@ The behavior of `predict()` varies based on the type of fitted model. For exampl
 
 ### Evaluation Metrics
 
-Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, some metrics are implemented in `tidyclust` to measure the quality of the created clusters. For partition clustering like k-means, these metrics are sum of squared error (SSE) and silhouette. Here we omit the details of the metrics and show only the structure of the code to cacluclate them from a fitted cluster model:
+Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, some metrics are implemented in `tidyclust` to measure the quality of the created clusters. For partition clustering like k-means, these metrics are sum of squared error (SSE) and silhouette. Here we omit the details of the metrics and show only the structure of the code to calculate them from a fitted cluster model:
 
 ```{r}
 #| prompt: true
@@ -248,7 +246,7 @@ The `tidyclust` framework provides the ability to use existing resampling and hy
 penguins_cv <- vfold_cv(penguins, v = 5)
 ```
 
-In this model, since we are tuning the number of clusters `num_clusters` is changed from `3` to `tune()`, and a workflow is created.
+In this model, since we are tuning the number of clusters, `num_clusters` is changed from `3` to `tune()`, and a workflow is created.
 
 ```{r}
 #| prompt: true
@@ -290,6 +288,8 @@ rf_grid_search <-
 The remaining chapters of this thesis will be dedicated to the examination of the design and implementation choices made while implementing FIM in `tidyclust.` Chapter 3 details each step of the workflow and Chapter 4 addresses current limitations and proposed enhancements.
 
 # Frequent Itemset Mining with tidyclust
+
+Having established the background of FIM and `tidyclust`, this chapter presents the core solution: the implementation of a `freq_itemsets` model in `tidyclust`.
 
 ## Model Specification
 
@@ -363,7 +363,7 @@ fi_pred <- fi_fit |>
   predict(new_data = new_groceries, type = "raw")
 ```
 
-When determining how to predict using frequent itemsets, the goal was to develop a method with practical use in real-world applications. This led to the implemention of a recommender system, where the new data contains partial information about a transaction, and the model predicts other items that are likely to be in the transaction. For example, suppose a customer in a grocery store has milk and bread in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where milk and bread appeared together.
+The `predict()` function for `freq_itemsets` models introduces a novel methodology for generating predictions, which is an original contribution of this thesis. Unlike the conventional use of frequent itemsets, which typically focuses on generating association rules, this implementation frames the task as a recommender system. The following algorithm predicts missing items in a new transaction based on the frequent itemsets learning from the training data. For example, suppose a customer in a grocery store has milk and bread in their cart. This system would predict which other items they are likely to add based on historical purchasing patterns where milk and bread appeared together.
 
 The recommender system implementation draws inspiration from traditional association rule mining techniques like CARs [@liu_integrating_1998] and usage-based recommendations [@mobasher_effective_2001]. The method predicts item-level probabilities using the confidence from frequent itemsets, retains interpretability from a rule-based reasoning approach, and handles sparse data through a global support fallback. Specifically, for each transaction in the new data:
 
@@ -393,7 +393,7 @@ kmeans_predict |>
   head(5)
 ```
 
-While this `tibble` format is standardized across `tidyclust` predict outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. 
+While this `tibble` format is standardized across `tidyclust` `predict()` outputs, it does not provide the information necessary for FIM predict output since FIM prediction on the items (columns) and not the observations (rows). To keep this standardized formatting while providing the necessary information, each row of the output `tibble` represents a transaction from the new data and holds a dataframe rather than a string or integer. 
 
 ```{r}
 #| prompt: true
@@ -427,7 +427,7 @@ fi_pred |>
 
 ## Evaluation Metrics
 
-While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommender system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. To prepare the `predict()` output for metric calculation, we provide a new function `augment_itemset_predict()`.
+This section documents how to calculate evaluation metrics for the `freq_itemsets` model predictions within the `tidymodels` ecosystem, serving as a guide for model assessment rather than a formal validation study. While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommender system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. To prepare the `predict()` output for metric calculation, we provide a new function `augment_itemset_predict()`.
 
 ```{r}
 #| prompt: true
@@ -483,7 +483,7 @@ While this implementation successfully integrates frequent itemset mining into t
 
 ## Cluster Assignment Methodology
 
-The current clustering method prioritizes itemsets based on size and support, assigning items to clusters by identifying the largest and most frequent patterns. However, relying on size and support alone may not always align with domain-specific objectives. For example, smaller but more distinct itemsets may be more informative in applications like fraud detection or medical diagnosis. Therefore, alternative metrics for selecting the "best" itemset could improve cluster quality in these situation.
+The current clustering method prioritizes itemsets based on size and support, assigning items to clusters by identifying the largest and most frequent patterns. However, relying on size and support alone may not always align with domain-specific objectives. For example, smaller but more distinct itemsets may be more informative in applications like fraud detection or medical diagnosis. Therefore, alternative metrics for selecting the "best" itemset could improve cluster quality in these situations.
 
 ## Prediction Methodology
 
@@ -538,13 +538,20 @@ To address these issues, I propose item-stratified CV. This approach constructs 
 
 # Conclusion
 
-This work provides new functionality in the `tidyclust` package by implementing a cluster specification for frequent itemset mining. Substantial modifications to existing `tidyclust` methods such as `fit()` and `predict()` were created to handle the unique output of the Apriori and Eclat algorithms. Furthermore, several new functions were built to support this implementation. These include `extract_predictions()` which reformats the complex prediction output to a user-friendly format, and `augment_itemset_predict()` that prepares prediction output for evaluation using standard metric functions.
+This work provides new functionality in the `tidyclust` package by implementing a cluster specification for frequent itemset mining. To handle the unique output of the Apriori and Eclat algorithms, substantial modifications were made to the existing `fit()` and `predict()` methods. Furthermore, several new functions were built to support this implementation. These include `extract_predictions()` which reformats the complex prediction output to a user-friendly format, and `augment_itemset_predict()` that prepares prediction output for evaluation using standard metric functions.
+
+Additionally, this work serves as a foundation that can be built upon to incorporate other semi-supervised algorithms into `tidyclust`. The implemented structure provides a clear path for integrating new item-based clustering techniques and for introducing a formal `association_rules()` model, further centralizing data mining tasks within the `tidyclust` framework.
 
 ## COMPUTATIONAL DETAILS
 
 The results in this paper were obtained using `R` 4.4.1 with the
 `tidyclust` 0.2.3.9000 package. `R` itself and all packages used are available 
 from the Comprehensive `R` Archive Network (CRAN) at https://CRAN.R-project.org/.
+It is important to note that the `tidyclust` package acts as a wrapper and does 
+not add computational overhead; performance is determined by the underlying engine
+package, in this case `arules`. Furthermore, the prediction method was designed
+to be lightweight, ensuring that generating predictions is not a computationally
+intensive process.
 
 # REFERENCES {.unnumbered}
 
@@ -605,38 +612,38 @@ from the Comprehensive `R` Archive Network (CRAN) at https://CRAN.R-project.org/
 ```{r}
 #| prompt: true
 extract_cluster_assignment.itemsets <- function(object, ...) {
+  max_iter = 1000
   items <- attr(object, "item_names")
   itemsets <- arules::DATAFRAME(object)
 
-  itemset_list <- lapply(strsplit(gsub(
-    "[{}]", 
-    "", 
-    itemsets$items), 
-    ","),
-    stringr::str_trim)
+  itemset_list <- lapply(
+    strsplit(
+      gsub("[{}]", "", itemsets$items), ","
+      ), 
+    stringr::str_trim
+    )
   support <- itemsets$support
   clusters <- numeric(length(items))
   changed <- TRUE  # Flag to track convergence
+  iter <- 0 # Initialize iteration counter
 
   # Continue until no changes occur
-  while (changed) {
+  while (changed && iter < max_iter) {
     changed <- FALSE
+    iter <- iter + 1
     for (i in 1:length(items)) {
       current_item <- items[i]
       relevant_itemsets <- which(
-        sapply(
-          itemset_list,
-          function(x) current_item %in% x
-          )
+        sapply(itemset_list, function(x) current_item %in% x)
         )
 
-      if (length(relevant_itemsets) == 0) next
+      if (length(relevant_itemsets) == 0) next  # Skip if no itemsets
 
       # Find the best itemset (largest size, then highest support)
       best_itemset <- relevant_itemsets[
         which.max(
-          sapply(itemset_list[relevant_itemsets], length) * 1000 + 
-          support[relevant_itemsets]                                
+          sapply(itemset_list[relevant_itemsets], length) * 1000 +
+          support[relevant_itemsets]
           )
         ]
       best_itemset_size <- length(itemset_list[[best_itemset]])
@@ -668,6 +675,16 @@ extract_cluster_assignment.itemsets <- function(object, ...) {
         }
       }
     }
+  }
+
+  if (iter == max_iter && changed) {
+    rlang::warn(
+      paste0(
+        "Cluster assignment did not converge within the maximum of ",
+        max_iter,
+        " iterations. Returning the current cluster assignments."
+      )
+    )
   }
 
   item_assignment_tibble_w_outliers(clusters, ...)
