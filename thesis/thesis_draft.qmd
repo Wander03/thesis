@@ -164,7 +164,7 @@ Here, the function, `k_means` is the name of the model, and the parameter(s) (e.
 
 Data preparation is taken care of by the `recipes` package [@kuhn_recipes_2024]. This package support a range of data transformations, including: feature scaling (e.g., normalization, standardization), categorical data encoding (e.g., dummy variables), data cleaning (e.g., missing value removal/imputation), and dimensionality  reduction (e.g., PCA, feature filtering). The package follows a declarative syntax, improving both readability by separating the data preparation code from the modeling code and reproducibility by ensuring consistent transformations across training and testing data.
 
-The following example uses the `palmerPenguins` dataset to create a recipe for k-means clustering:
+The following example uses the `palmerPenguins` dataset [@horst_palmerpenguins_2020] to create a recipe for k-means clustering:
 
 ```{r}
 #| prompt: true
@@ -218,7 +218,7 @@ The behavior of `predict()` varies based on the type of fitted model. For exampl
 
 ### Evaluation Metrics
 
-Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, some metrics are implemented in `tidyclust` to measure the quality of the created clusters. For partition clustering like k-means, these metrics are sum of squared error (SSE) and silhouette. Here we omit the details of the metrics and show only the structure of the code to calculate them from a fitted cluster model:
+Since unsupervised learning algorithms have no target or outcome variables, there is no inherent metric for measuring the success of predictions. However, some metrics are implemented in `tidyclust` to measure the quality of the created clusters. For example, when evaluating results of k-means clustering, researchers often use two metrics: SSE and the silhouette score. Here we omit the details of the metrics and show only the structure of the code to calculate them from a fitted cluster model:
 
 ```{r}
 #| prompt: true
@@ -427,7 +427,7 @@ fi_pred |>
 
 ## Evaluation Metrics
 
-This section documents how to calculate evaluation metrics for the `freq_itemsets` model predictions within the `tidymodels` ecosystem, serving as a guide for model assessment rather than a formal validation study. While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommender system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. To prepare the `predict()` output for metric calculation, we provide a new function `augment_itemset_predict()`.
+This section documents how to calculate evaluation metrics for the `freq_itemsets` model predictions within the `tidymodels` ecosystem, serving as a guide for model assessment. While support values traditionally assess frequent itemset quality, they do not guarantee predictive performance. Since the `predict()` methodology resembles a recommender system, the results should be evaluated using similar metrics. Common metrics such as root mean squared error (RMSE), accuracy, precision, and recall are implemented in the `yardstick` package [@kuhn_yardstick_2024]. The metrics require a list of predicted values and a list of the true values. To prepare the `predict()` output for metric calculation, we provide a new function `augment_itemset_predict()`.
 
 ```{r}
 #| prompt: true
@@ -540,7 +540,7 @@ To address these issues, I propose item-stratified CV. This approach constructs 
 
 This work provides new functionality in the `tidyclust` package by implementing a cluster specification for frequent itemset mining. To handle the unique output of the Apriori and Eclat algorithms, substantial modifications were made to the existing `fit()` and `predict()` methods. Furthermore, several new functions were built to support this implementation. These include `extract_predictions()` which reformats the complex prediction output to a user-friendly format, and `augment_itemset_predict()` that prepares prediction output for evaluation using standard metric functions.
 
-Additionally, this work serves as a foundation that can be built upon to incorporate other semi-supervised algorithms into `tidyclust`. The implemented structure provides a clear path for integrating new item-based clustering techniques and for introducing a formal `association_rules()` model, further centralizing data mining tasks within the `tidyclust` framework.
+Additionally, this work serves as a foundation that can be built upon to incorporate other unsupervised and semi-supervised algorithms into `tidyclust` that provide column-clustering. Examples of algorithms that may follow this new framework include latent dirichlet allocation, matrix factorization and recommender systems, or factor analysis.
 
 ## COMPUTATIONAL DETAILS
 
@@ -637,7 +637,7 @@ extract_cluster_assignment.itemsets <- function(object, ...) {
         sapply(itemset_list, function(x) current_item %in% x)
         )
 
-      if (length(relevant_itemsets) == 0) next  # Skip if no itemsets
+      if (length(relevant_itemsets) == 0) next
 
       # Find the best itemset (largest size, then highest support)
       best_itemset <- relevant_itemsets[
