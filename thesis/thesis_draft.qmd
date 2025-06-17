@@ -11,17 +11,18 @@ format:
       - top=1in
       - bottom=1in
     include-before-body:
-      - title-page.tex
-      - copyright-page.tex
-      - committee-page.tex
-      - abstract.tex
-      # - acknowledgments.tex
-      - table-of-contents.tex
+      - frontmatter/information.tex
+      - frontmatter/title-page.tex
+      - frontmatter/copyright-page.tex
+      - frontmatter/committee-page.tex
+      - frontmatter/abstract.tex
+      # - frontmatter/acknowledgments.tex
+      - frontmatter/table-of-contents.tex
     number-sections: true
     citation-style: apa
     bibliography: freq_itemsets_citations.bib
     csl: apa-6th-edition.csl
-    include-in-header: formating.tex
+    include-in-header: frontmatter/formating.tex
 eval: false
 ---
 
